@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `ragbench faithfulness --shard K/N` scores one slice of the answers, and
+  `ragbench faithfulness-merge` joins the slices into the file an unsharded run writes.
+  The human-label workflow now scores NLI in 16 shards.
 - `ragbench run --recall-k`: report recall at any cutoffs (repeat or comma-separate,
   e.g. `--recall-k 5,10,100`); the default stays 10 and 100. The GitHub Action takes the
   same cutoffs as `recall-k`.

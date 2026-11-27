@@ -205,6 +205,45 @@ class FaithfulnessResult:
         path.write_text(json.dumps(self.as_dict(), indent=2) + "\n", encoding="utf-8")
 
 
+def summarize(
+    per_answer: Sequence[Mapping[str, Any]], *, rounds: int = 2000, seed: int = 0
+) -> tuple[dict, dict | None]:
+    """Summary and human-label agreement for per-answer rows, as :func:`score_answers` makes."""
+    scored = [r for r in per_answer if r["faithfulness"] is not None]
+    if not scored:
+        raise ValueError("no answer had a claim to score")
+    values = [r["faithfulness"] for r in scored]
+    summary = {
+        "answers": len(per_answer),
+        "scored": len(scored),
+        "no_claims": len(per_answer) - len(scored),
+        "claims": sum(len(r["claims"]) for r in scored),
+        "faithfulness": bootstrap_ci(values, rounds=rounds, seed=seed).as_dict(),
+        "mean_support": round(statistics.fmean(r["mean_support"] for r in scored), 4),
+    }
+
+    agreement = None
+    labelled = [r for r in scored if "label" in r]
+    if labelled and {r["label"] for r in labelled} == {0, 1}:
+        labels = [r["label"] for r in labelled]
+        agreement = {
+            "labelled": len(labelled),
+            "faithful": sum(labels),
+            "auc_faithfulness": round(roc_auc([r["faithfulness"] for r in labelled], labels), 4),
+            "auc_mean_support": round(roc_auc([r["mean_support"] for r in labelled], labels), 4),
+            # An answer is called faithful when every claim is supported.
+            "accuracy_all_supported": round(
+                statistics.fmean(
+                    (r["faithfulness"] == 1.0) == bool(y)
+                    for r, y in zip(labelled, labels, strict=True)
+                ),
+                4,
+            ),
+        }
+
+    return summary, agreement
+
+
 def score_answers(
     judge: Any,
     records: Iterable[AnswerRecord],
@@ -241,37 +280,7 @@ def score_answers(
         if progress:
             progress(n, len(records))
 
-    scored = [r for r in per_answer if r["faithfulness"] is not None]
-    if not scored:
-        raise ValueError("no answer had a claim to score")
-    values = [r["faithfulness"] for r in scored]
-    summary = {
-        "answers": len(per_answer),
-        "scored": len(scored),
-        "no_claims": len(per_answer) - len(scored),
-        "claims": sum(len(r["claims"]) for r in scored),
-        "faithfulness": bootstrap_ci(values, rounds=rounds, seed=seed).as_dict(),
-        "mean_support": round(statistics.fmean(r["mean_support"] for r in scored), 4),
-    }
-
-    agreement = None
-    labelled = [r for r in scored if "label" in r]
-    if labelled and {r["label"] for r in labelled} == {0, 1}:
-        labels = [r["label"] for r in labelled]
-        agreement = {
-            "labelled": len(labelled),
-            "faithful": sum(labels),
-            "auc_faithfulness": round(roc_auc([r["faithfulness"] for r in labelled], labels), 4),
-            "auc_mean_support": round(roc_auc([r["mean_support"] for r in labelled], labels), 4),
-            # An answer is called faithful when every claim is supported.
-            "accuracy_all_supported": round(
-                statistics.fmean(
-                    (r["faithfulness"] == 1.0) == bool(y)
-                    for r, y in zip(labelled, labels, strict=True)
-                ),
-                4,
-            ),
-        }
+    summary, agreement = summarize(per_answer, rounds=rounds, seed=seed)
 
     return FaithfulnessResult(
         name=name or judge_spec.rpartition(":")[2] or type(judge).__name__,
@@ -282,4 +291,69 @@ def score_answers(
         summary=summary,
         agreement=agreement,
         meta=environment() | dict(meta or {}),
+    )
+
+
+def shard(records: Sequence[AnswerRecord], spec: str) -> list[AnswerRecord]:
+    """The ``K/N`` shard of ``records``: the K-th of N contiguous, near-equal slices (K from 0)."""
+    m = re.fullmatch(r"(\d+)/(\d+)", spec.strip())
+    if not m or int(m[2]) < 1 or int(m[1]) >= int(m[2]):
+        raise ValueError(f"shard must be K/N with 0 <= K < N, got {spec!r}")
+    k, n = int(m[1]), int(m[2])
+    return list(records[k * len(records) // n : (k + 1) * len(records) // n])
+
+
+def merge_results(
+    shards: Sequence[FaithfulnessResult | Mapping[str, Any]],
+    *,
+    rounds: int = 2000,
+    seed: int = 0,
+    meta: Mapping[str, Any] | None = None,
+) -> FaithfulnessResult:
+    """Join the shards of one run back into the result an unsharded run would give.
+
+    Every shard must come from the same judge, params and threshold, and carry its
+    ``K/N`` in ``meta["shard"]``; together they must cover 0..N-1 exactly once.
+    """
+    rows = [s.as_dict() if isinstance(s, FaithfulnessResult) else dict(s) for s in shards]
+    if not rows:
+        raise ValueError("no shards to merge")
+    first = rows[0]
+    for r in rows:
+        for key in ("schema", "name", "judge", "params", "threshold"):
+            if r.get(key) != first.get(key):
+                raise ValueError(f"shards disagree on {key}: {first.get(key)!r} vs {r.get(key)!r}")
+    specs = [str((r.get("meta") or {}).get("shard", "")) for r in rows]
+    parsed = [re.fullmatch(r"(\d+)/(\d+)", sp) for sp in specs]
+    if not all(parsed):
+        raise ValueError(f"every shard needs meta.shard as K/N, got {specs}")
+    totals = {int(m[2]) for m in parsed}
+    if len(totals) != 1:
+        raise ValueError(f"shards come from different splits: {specs}")
+    n = totals.pop()
+    ks = sorted(int(m[1]) for m in parsed)
+    if ks != list(range(n)):
+        raise ValueError(f"shards must cover 0..{n - 1} once each, got {sorted(specs)}")
+    ordered = sorted(zip(parsed, rows, strict=True), key=lambda pr: int(pr[0][1]))
+    answers = [a for _, r in ordered for a in r["answers"]]
+    ids = [a["id"] for a in answers]
+    if len(set(ids)) != len(ids):
+        raise ValueError("an answer id appears in more than one shard")
+    summary, agreement = summarize(answers, rounds=rounds, seed=seed)
+    shard_meta = [r.get("meta") or {} for _, r in ordered]
+    return FaithfulnessResult(
+        name=first["name"],
+        judge=first["judge"],
+        params=dict(first["params"]),
+        threshold=first["threshold"],
+        answers=answers,
+        summary=summary,
+        agreement=agreement,
+        meta=environment()
+        | {
+            "merged_shards": n,
+            "shard_runs": sorted({m.get("ci_run") for m in shard_meta if m.get("ci_run")}),
+            "shard_commands": [m.get("command") for m in shard_meta],
+        }
+        | dict(meta or {}),
     )

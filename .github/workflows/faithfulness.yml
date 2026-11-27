@@ -46,9 +46,15 @@ jobs:
           time ragbench faithfulness --answers /tmp/sample.jsonl \
             --judge ragbench.judges:NLI --out /tmp/sample.json
 
-  ragtruth:
+  # The NLI judge runs in shards, because one CPU runner has scored as slowly as
+  # 17 seconds an answer; each shard writes its slice and the ragtruth job joins them.
+  nli-shard:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -60,10 +66,38 @@ jobs:
           key: hf-deberta-v3-base-mnli-fever-anli
       - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -e '.[nli]'
+      - run: ragbench download ragtruth-qa --dest data
+      - name: Score shard ${{ matrix.shard }} of 16 with NLI
+        timeout-minutes: 75
+        run: |
+          grep -m1 "model name" /proc/cpuinfo || true
+          nproc
+          ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl \
+            --judge ragbench.judges:NLI --name nli-deberta-v3-base \
+            --shard ${{ matrix.shard }}/16 --out shards/nli-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nli-shard-${{ matrix.shard }}
+          path: shards/
+
+  ragtruth:
+    needs: nli-shard
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
       - name: Build ragtruth-qa
         run: ragbench download ragtruth-qa --dest data
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nli-shard-*
+          path: shards
+          merge-multiple: true
       - name: Score with each judge
-        timeout-minutes: 150
         run: |
           out=results/faithfulness/ragtruth-qa
           rm -rf "$out" && mkdir -p "$out"
@@ -71,9 +105,8 @@ jobs:
           ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl \
             --judge ragbench.judges:TokenOverlap --name token-overlap \
             --out "$out/token-overlap.json" --quiet
-          ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl \
-            --judge ragbench.judges:NLI --name nli-deberta-v3-base \
-            --out "$out/nli-deberta-v3-base.json"
+          ls shards
+          ragbench faithfulness-merge shards/nli-*.json --out "$out/nli-deberta-v3-base.json"
       - uses: actions/upload-artifact@v4
         with:
           name: faithfulness-results
