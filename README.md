@@ -42,7 +42,7 @@ and Dense batches its queries, so its p50 is the batch time divided by the query
 Means over test queries with 95% bootstrap intervals; ragbench 0.1.0, commit 16ed3d5, workflow run [45932384237](https://github.com/HarshitGadge/ragbench/actions/runs/45932384237).
 
 
-Paired bootstrap, dense minus BM25 (stemmed), same queries:
+Paired bootstrap, dense-bge-small minus bm25-stem, same queries:
 
 - arguana, ndcg@10: +0.1961 (95% CI +0.1776 to +0.2148, 1406 queries, interval excludes 0)
 - arguana, recall@100: +0.0519 (95% CI +0.0391 to +0.0647, 1406 queries, interval excludes 0)
@@ -89,12 +89,14 @@ ragbench run --data data/scifact --retriever examples/overlap.py:WordOverlap
 
 ## Built-in retrievers
 
-Two baselines ship with RAGBench, and they double as examples of the interface.
+Four retrievers ship with RAGBench, and they double as examples of the interface.
 
 | retriever | spec | needs |
 |---|---|---|
 | BM25 (Lucene scoring, k1=0.9, b=0.4) | `ragbench.retrievers:BM25` | nothing |
 | Dense, cosine over normalised embeddings | `ragbench.retrievers:Dense` | `pip install 'ragbench-eval[dense]'` |
+| Hybrid, reciprocal rank fusion of BM25 and Dense | `ragbench.retrievers:Hybrid` | `pip install 'ragbench-eval[dense]'` |
+| Rerank, a cross-encoder over a first stage's top hits | `ragbench.retrievers:Rerank` | `pip install 'ragbench-eval[dense]'` |
 
 ```bash
 ragbench run --data data/scifact --retriever ragbench.retrievers:BM25 --param stem=true
@@ -108,6 +110,21 @@ Elasticsearch analyser, so its scores will not match Elasticsearch-based BEIR
 baselines exactly. Dense takes `model` (any [fastembed](https://github.com/qdrant/fastembed)
 text model), `query_prefix` for models that expect one, and `batch_size`; from Python
 you can pass `encoder=` with any object that has `embed_documents` and `embed_query`.
+
+Hybrid fuses BM25 and Dense with reciprocal rank fusion (score = Σ 1/(`rrf_k` + rank),
+`rrf_k=60` as in Cormack, Clarke and Buettcher, SIGIR 2009) over each one's top
+`candidates` (100). Rerank re-scores the top `candidates` (30) of a `first_stage`
+(`bm25`, `dense` or `hybrid`) with a fastembed cross-encoder (`model`, default
+`Xenova/ms-marco-MiniLM-L-6-v2`) and keeps the rest in first-stage order, so it can
+change nDCG@10 but not Recall@100. Dense, Hybrid and Rerank take `cache=<dir>` to save
+the corpus embedding as a `.npy` file keyed by the model and the exact corpus text, so
+several runs on one dataset embed it once.
+
+```bash
+ragbench run --data data/scifact --retriever ragbench.retrievers:Hybrid --param cache=cache/embeddings
+ragbench run --data data/scifact --retriever ragbench.retrievers:Rerank \
+  --param first_stage=hybrid --param candidates=30 --param cache=cache/embeddings
+```
 
 ## Plug in a retriever
 

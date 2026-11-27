@@ -3,11 +3,17 @@
 The default encoder is `fastembed <https://github.com/qdrant/fastembed>`_ (ONNX, CPU),
 installed with ``pip install 'ragbench-eval[dense]'``. Pass ``encoder=`` to use anything else:
 an object with ``embed_documents(texts)`` and ``embed_query(text)`` returning vectors.
+
+Embedding a corpus is the slow part of a dense run. Pass ``cache="some/dir"`` to save the
+corpus matrix there and reuse it on the next run with the same model and documents, for
+example when the same embeddings feed ``Dense``, ``Hybrid`` and ``Rerank``.
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 from ragbench.datasets import Document
@@ -41,11 +47,20 @@ class Dense:
         query_prefix: str = "",
         batch_size: int = 256,
         encoder: Any = None,
+        cache: str | None = None,
     ):
         self.model_name = model
         self.encoder = encoder or FastEmbedEncoder(model, batch_size, query_prefix)
+        self.cache = Path(cache) if cache else None
         self.doc_ids: list[str] = []
         self.matrix = None
+        self.cache_hit = False
+
+    def _cache_path(self, corpus: Mapping[str, Document]) -> Path:
+        h = hashlib.sha256(self.model_name.encode())
+        for doc_id in self.doc_ids:
+            h.update(b"\0" + doc_id.encode() + b"\t" + corpus[doc_id].text.encode())
+        return self.cache / f"{h.hexdigest()[:32]}.npy"
 
     @staticmethod
     def _normalise(matrix):
@@ -56,9 +71,21 @@ class Dense:
         return matrix / np.where(norms == 0, 1, norms)
 
     def index(self, corpus: Mapping[str, Document]) -> None:
+        import numpy as np
+
         self.doc_ids = list(corpus)
+        path = self._cache_path(corpus) if self.cache else None
+        if path is not None and path.exists():
+            self.matrix = np.load(path)
+            self.cache_hit = True
+            return
         vectors = self.encoder.embed_documents([corpus[d].text for d in self.doc_ids])
         self.matrix = self._normalise(vectors)
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp.npy")
+            np.save(tmp, self.matrix)
+            tmp.replace(path)
 
     def _top(self, sims, k: int) -> list[Hit]:
         import numpy as np

@@ -1,12 +1,22 @@
 # Changelog
 
+## Unreleased
+
+- `Hybrid` retriever: reciprocal rank fusion of BM25 and Dense (`rrf_k=60`).
+- `Rerank` retriever: a fastembed cross-encoder over the top hits of a BM25, Dense or
+  Hybrid first stage.
+- `cache=<dir>` for Dense, Hybrid and Rerank: the corpus embedding is saved once per
+  model and corpus and reused.
+- The benchmark runs Hybrid and Rerank too, one job per dataset, and the README shows
+  one paired comparison per pair of runs.
+
 ## 1.1.1 (unreleased)
 
 - The distribution is renamed `ragbench-eval`, because PyPI refuses `ragbench` as too
   close to the existing `rag-bench` project. The import name and the `ragbench` command
   are unchanged.
 
-## 1.1.0 (unreleased)
+## 1.1.0 (2026-11-27)
 
 - `ragbench gate`: compares a candidate run with a baseline on the same queries and
   exits 1 when a metric drops by more than `--max-drop`, judged on the mean change or,

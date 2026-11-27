@@ -1,15 +1,12 @@
 name: Benchmark
 
-# Runs scripts/benchmark.sh on BEIR datasets and uploads results/ as an artifact.
-# The result files committed to this repository are that artifact, unedited; each
-# one records this workflow's run URL and the commit it ran on.
+# Runs scripts/benchmark.sh on BEIR datasets, one job per dataset, and uploads
+# results/ as the "benchmark-results" artifact. The result files committed to this
+# repository are that artifact, unedited; each one records this workflow's run URL
+# and the commit it ran on.
 
 on:
   workflow_dispatch:
-    inputs:
-      datasets:
-        description: "Space-separated BEIR datasets"
-        default: "scifact nfcorpus arguana"
   pull_request:
     paths:
       - "scripts/benchmark.sh"
@@ -22,27 +19,76 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        dataset: [scifact, nfcorpus, arguana]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # Datasets and model weights only. Corpus embeddings are not cached across
+      # runs, so every published run embeds its corpus itself.
       - uses: actions/cache@v4
         with:
           path: |
             data
             /tmp/fastembed_cache
-          key: beir-and-models-v2
+          key: beir-and-models-v3-${{ matrix.dataset }}
       - run: pip install -e '.[dense,stem,hf]'
       - name: Run the benchmark
         env:
-          DATASETS: ${{ github.event.inputs.datasets || 'scifact nfcorpus arguana' }}
+          DATASETS: ${{ matrix.dataset }}
           FASTEMBED_CACHE_PATH: /tmp/fastembed_cache
-        run: bash scripts/benchmark.sh
+        # Start from an empty results/<dataset>, so the artifact holds only this run's files.
+        run: |
+          rm -rf "results/$DATASETS"
+          bash scripts/benchmark.sh
       - name: Results table
-        run: ragbench report results/*/bm25.json results/*/bm25-stem.json results/*/dense-bge-small.json | tee -a "$GITHUB_STEP_SUMMARY"
+        run: ragbench report results/*/[!c]*.json | tee -a "$GITHUB_STEP_SUMMARY"
+      # Upload this job's dataset only. The checkout also holds the committed results
+      # for the other datasets, and merging those stale copies would overwrite fresh files.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ matrix.dataset }}
+          path: results/${{ matrix.dataset }}/
+
+  collect:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: results-*
+          path: downloaded/
+      # Each artifact holds one dataset's files, so no file is written twice.
+      - name: Assemble results/
+        run: |
+          for dir in downloaded/results-*; do
+            dataset="${dir#downloaded/results-}"
+            mkdir -p "results/$dataset"
+            mv "$dir"/* "results/$dataset/"
+          done
+          python - <<'PY'
+          import json, pathlib
+          files = sorted(pathlib.Path("results").glob("*/*.json"))
+          for f in files:
+              json.loads(f.read_text())  # fails the job on a corrupt file
+          print(f"{len(files)} result files parse as JSON")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: results/
+      # The same files as a checksummed archive in the log, for anyone who can read
+      # this run's logs but can't download its artifacts.
+      - name: Print the results archive
+        run: |
+          tar -czf results.tgz results
+          sha256sum results.tgz
+          find results -type f | sort | xargs sha256sum
+          echo "BEGIN results.tgz base64"
+          base64 -w 76 results.tgz
+          echo "END results.tgz base64"
