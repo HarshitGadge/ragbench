@@ -762,7 +762,15 @@
     0.2146
    ],
    "queries": 1406,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/arguana/compare-bm25-stem__dense-bge-small.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:44:23+00:00",
+    "command": "ragbench run --data data/arguana --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name dense-bge-small --out results/arguana/dense-bge-small.json --quiet"
+   }
   },
   {
    "dataset": "arguana",
@@ -775,7 +783,15 @@
     0.0647
    ],
    "queries": 1406,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/arguana/compare-bm25-stem__dense-bge-small.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:44:23+00:00",
+    "command": "ragbench run --data data/arguana --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name dense-bge-small --out results/arguana/dense-bge-small.json --quiet"
+   }
   },
   {
    "dataset": "arguana",
@@ -788,7 +804,15 @@
     -0.032
    ],
    "queries": 1406,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/arguana/compare-dense-bge-small__hybrid.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:50:30+00:00",
+    "command": "ragbench run --data data/arguana --retriever ragbench.retrievers:Hybrid --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name hybrid --out results/arguana/hybrid.json --quiet"
+   }
   },
   {
    "dataset": "arguana",
@@ -801,7 +825,15 @@
     0.0057
    ],
    "queries": 1406,
-   "significant": false
+   "significant": false,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/arguana/compare-dense-bge-small__hybrid.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:50:30+00:00",
+    "command": "ragbench run --data data/arguana --retriever ragbench.retrievers:Hybrid --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name hybrid --out results/arguana/hybrid.json --quiet"
+   }
   },
   {
    "dataset": "arguana",
@@ -814,7 +846,15 @@
     -0.0937
    ],
    "queries": 1406,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/arguana/compare-hybrid__rerank-minilm.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T08:08:49+00:00",
+    "command": "ragbench run --data data/arguana --retriever ragbench.retrievers:Rerank --param first_stage=hybrid --param model=Xenova/ms-marco-MiniLM-L-6-v2 --param candidates=30 --param dense_model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name rerank-minilm --out results/arguana/rerank-minilm.json --quiet"
+   }
   },
   {
    "dataset": "nfcorpus",
@@ -827,7 +867,15 @@
     0.039
    ],
    "queries": 323,
-   "significant": false
+   "significant": false,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/nfcorpus/compare-bm25-stem__dense-bge-small.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:13:01+00:00",
+    "command": "ragbench run --data data/nfcorpus --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name dense-bge-small --out results/nfcorpus/dense-bge-small.json --quiet"
+   }
   },
   {
    "dataset": "nfcorpus",
@@ -840,7 +888,15 @@
     0.0795
    ],
    "queries": 323,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/nfcorpus/compare-bm25-stem__dense-bge-small.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:13:01+00:00",
+    "command": "ragbench run --data data/nfcorpus --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name dense-bge-small --out results/nfcorpus/dense-bge-small.json --quiet"
+   }
   },
   {
    "dataset": "nfcorpus",
@@ -853,7 +909,15 @@
     0.04
    ],
    "queries": 323,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/nfcorpus/compare-dense-bge-small__hybrid.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:13:15+00:00",
+    "command": "ragbench run --data data/nfcorpus --retriever ragbench.retrievers:Hybrid --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name hybrid --out results/nfcorpus/hybrid.json --quiet"
+   }
   },
   {
    "dataset": "nfcorpus",
@@ -866,7 +930,15 @@
     0.0178
    ],
    "queries": 323,
-   "significant": false
+   "significant": false,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/nfcorpus/compare-dense-bge-small__hybrid.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:13:15+00:00",
+    "command": "ragbench run --data data/nfcorpus --retriever ragbench.retrievers:Hybrid --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name hybrid --out results/nfcorpus/hybrid.json --quiet"
+   }
   },
   {
    "dataset": "nfcorpus",
@@ -879,7 +951,15 @@
     0.008
    ],
    "queries": 323,
-   "significant": false
+   "significant": false,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/nfcorpus/compare-hybrid__rerank-minilm.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:21:08+00:00",
+    "command": "ragbench run --data data/nfcorpus --retriever ragbench.retrievers:Rerank --param first_stage=hybrid --param model=Xenova/ms-marco-MiniLM-L-6-v2 --param candidates=30 --param dense_model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name rerank-minilm --out results/nfcorpus/rerank-minilm.json --quiet"
+   }
   },
   {
    "dataset": "scifact",
@@ -892,7 +972,15 @@
     0.073
    ],
    "queries": 300,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/scifact/compare-bm25-stem__dense-bge-small.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:21:51+00:00",
+    "command": "ragbench run --data data/scifact --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name dense-bge-small --out results/scifact/dense-bge-small.json --quiet"
+   }
   },
   {
    "dataset": "scifact",
@@ -905,7 +993,15 @@
     0.066
    ],
    "queries": 300,
-   "significant": false
+   "significant": false,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/scifact/compare-bm25-stem__dense-bge-small.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:21:51+00:00",
+    "command": "ragbench run --data data/scifact --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name dense-bge-small --out results/scifact/dense-bge-small.json --quiet"
+   }
   },
   {
    "dataset": "scifact",
@@ -918,7 +1014,15 @@
     0.0401
    ],
    "queries": 300,
-   "significant": false
+   "significant": false,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/scifact/compare-dense-bge-small__hybrid.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:22:15+00:00",
+    "command": "ragbench run --data data/scifact --retriever ragbench.retrievers:Hybrid --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name hybrid --out results/scifact/hybrid.json --quiet"
+   }
   },
   {
    "dataset": "scifact",
@@ -931,7 +1035,15 @@
     0.0333
    ],
    "queries": 300,
-   "significant": false
+   "significant": false,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/scifact/compare-dense-bge-small__hybrid.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:22:15+00:00",
+    "command": "ragbench run --data data/scifact --retriever ragbench.retrievers:Hybrid --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name hybrid --out results/scifact/hybrid.json --quiet"
+   }
   },
   {
    "dataset": "scifact",
@@ -944,7 +1056,15 @@
     -0.0085
    ],
    "queries": 300,
-   "significant": true
+   "significant": true,
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/scifact/compare-hybrid__rerank-minilm.json",
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
+    "created": "2026-11-27T06:34:49+00:00",
+    "command": "ragbench run --data data/scifact --retriever ragbench.retrievers:Rerank --param first_stage=hybrid --param model=Xenova/ms-marco-MiniLM-L-6-v2 --param candidates=30 --param dense_model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name rerank-minilm --out results/scifact/rerank-minilm.json --quiet"
+   }
   }
  ],
  "faithfulness": []

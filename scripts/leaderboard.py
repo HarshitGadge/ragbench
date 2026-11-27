@@ -24,6 +24,10 @@ def _provenance(meta: dict) -> dict:
     return {k: meta.get(k) for k in ("ragbench", "git_sha", "ci_run", "created", "command")}
 
 
+def _url(path: Path, results_dir: Path) -> str:
+    return f"{REPO}/blob/main/results/{path.relative_to(results_dir).as_posix()}"
+
+
 def build(results_dir: Path) -> dict:
     retrieval, comparisons, faithfulness = [], [], []
     for path in sorted(results_dir.glob("*/*.json")):
@@ -40,6 +44,7 @@ def build(results_dir: Path) -> dict:
                         "ci": row["diff"]["ci"],
                         "queries": row["queries"],
                         "significant": row["significant"],
+                        "file": _url(path, results_dir),
                     }
                 )
             continue
@@ -56,7 +61,7 @@ def build(results_dir: Path) -> dict:
                 },
                 "latency_ms_p50": data["latency_ms"]["p50"],
                 "source": _provenance(data["meta"]),
-                "file": f"{REPO}/blob/main/{path.relative_to(results_dir.parent).as_posix()}",
+                "file": _url(path, results_dir),
             }
         )
     for path in sorted((results_dir / "faithfulness").glob("*/*.json")):
@@ -74,8 +79,14 @@ def build(results_dir: Path) -> dict:
                 "faithfulness": data["summary"]["faithfulness"],
                 "agreement": data.get("agreement"),
                 "source": _provenance(data["meta"]),
-                "file": f"{REPO}/blob/main/{path.relative_to(results_dir.parent).as_posix()}",
+                "file": _url(path, results_dir),
             }
+        )
+    # A comparison is computed in the same workflow run as the two runs it compares.
+    sources = {(r["dataset"], r["run"]): r["source"] for r in retrieval}
+    for c in comparisons:
+        c["source"] = sources.get((c["dataset"], c["candidate"])) or sources.get(
+            (c["dataset"], c["baseline"])
         )
     retrieval.sort(key=lambda r: (r["dataset"], -r["metrics"]["ndcg@10"]["mean"], r["run"]))
     return {

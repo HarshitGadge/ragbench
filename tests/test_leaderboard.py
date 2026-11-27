@@ -29,7 +29,12 @@ def test_build_and_check(tiny, tmp_path):
     # Best nDCG@10 first within a dataset, and no per-query scores.
     assert [r["run"] for r in data["retrieval"]] == ["oracle", "nothing"]
     assert "per_query" not in out.read_text()
-    assert data["comparisons"][0]["candidate"] == "oracle"
+    (comp,) = data["comparisons"]
+    assert comp["candidate"] == "oracle"
+    assert comp["source"] == next(r["source"] for r in data["retrieval"] if r["run"] == "oracle")
+    prefix = "https://github.com/HarshitGadge/ragbench/blob/main/results/"
+    assert comp["file"] == prefix + "tiny/compare.json"
+    assert all(r["file"].startswith(prefix) for r in data["retrieval"] + data["faithfulness"])
     (f,) = data["faithfulness"]
     assert (f["answers"], f["judge"], f["agreement"]["auc_faithfulness"]) == (
         "fixture",
