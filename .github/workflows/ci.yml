@@ -37,6 +37,8 @@ jobs:
         run: pytest --cov=ragbench --cov-report=term-missing
       - name: README results match results/
         run: python scripts/update_readme.py --check
+      - name: leaderboard.json matches results/
+        run: python scripts/leaderboard.py --check
 
   package:
     runs-on: ubuntu-latest

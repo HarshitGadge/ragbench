@@ -90,6 +90,7 @@ Reproduce:
 pip install -e '.[dense,stem,hf]'
 bash scripts/benchmark.sh
 python scripts/update_readme.py
+python scripts/leaderboard.py      # leaderboard.json, the same results for web pages
 ```
 
 ## Install

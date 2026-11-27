@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `leaderboard.json`: every committed result's means, intervals, comparisons and
+  provenance, without per-query scores, for web pages to read. CI checks it is current.
 - `ragbench faithfulness`: splits generated answers into claims, asks a judge whether
   the retrieved contexts support each one, and reports the share of supported claims
   with a bootstrap 95% interval. With human labels in the answers file it also reports
