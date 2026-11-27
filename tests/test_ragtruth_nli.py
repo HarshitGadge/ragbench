@@ -5,7 +5,7 @@ import pytest
 
 from ragbench import ragtruth
 from ragbench.faithfulness import load_answers, score_answers
-from ragbench.judges import NLI, entailment_index
+from ragbench.judges import NLI, by_length, entailment_index
 
 FIX = "tests/fixtures/ragtruth"
 
@@ -101,3 +101,18 @@ def test_nli_is_lazy():
     judge = NLI(batch_size="8", max_length="256")
     assert judge._loaded is None
     assert (judge.batch_size, judge.max_length) == (8, 256)
+
+
+def test_by_length_batches_similar_lengths_and_keeps_order():
+    pairs = [("x" * 50, "a"), ("y", "b"), ("z" * 20, "c"), ("w", "d"), ("v" * 30, "e")]
+    batches = []
+
+    def score(chunk):
+        batches.append([h for _, h in chunk])
+        return [ord(h) for _, h in chunk]
+
+    assert by_length(pairs, 2, score) == [ord(h) for _, h in pairs]
+    assert batches == [["b", "d"], ["c", "e"], ["a"]]
+    with pytest.raises(ValueError, match="returned 0 scores"):
+        by_length(pairs, 2, lambda chunk: [])
+    assert by_length([], 4, score) == []

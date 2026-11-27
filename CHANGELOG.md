@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `ragbench faithfulness --shard K/N` scores one slice of the answers, and
+  `ragbench faithfulness-merge` joins the slices into the file an unsharded run writes.
+  The human-label workflow now scores NLI in 16 shards.
 - `ragbench run --recall-k`: report recall at any cutoffs (repeat or comma-separate,
   e.g. `--recall-k 5,10,100`); the default stays 10 and 100. The GitHub Action takes the
   same cutoffs as `recall-k`.
@@ -13,6 +16,8 @@
   the judge's agreement with them (ROC AUC and accuracy).
 - `ragbench.judges:TokenOverlap`: a dependency-free lexical baseline judge.
 - `ragbench.judges:NLI`: a natural-language-inference model judge, with the `nli` extra.
+  It batches pairs of similar length, so little of each batch is padding.
+- `ragbench faithfulness` reports progress every 25 answers, with the time so far.
 - `ragbench download ragtruth-qa`: 875 human-labelled RAGTruth answers, pinned and
   checksummed, for checking a judge. A "Faithfulness" workflow scores them with each judge.
 - Faithfulness results record the ragbench version, the CI run and the commit, like

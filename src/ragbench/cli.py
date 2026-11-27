@@ -7,13 +7,21 @@ import json
 import os
 import shlex
 import sys
+import time
 from pathlib import Path
 
 from ragbench import __version__, ragtruth
 from ragbench.compare import compare_runs
 from ragbench.datasets import load_beir
 from ragbench.download import KNOWN, download
-from ragbench.faithfulness import load_answers, load_judge, score_answers
+from ragbench.faithfulness import (
+    FaithfulnessResult,
+    load_answers,
+    load_judge,
+    merge_results,
+    score_answers,
+    shard,
+)
 from ragbench.gate import MODES, gate
 from ragbench.report import DEFAULT_METRICS, markdown_table
 from ragbench.retriever import load_retriever, parse_params
@@ -144,12 +152,22 @@ def _cmd_report(args: argparse.Namespace) -> int:
 
 def _cmd_faithfulness(args: argparse.Namespace) -> int:
     records = load_answers(args.answers)
+    meta: dict = {"answers_file": str(args.answers), "command": "ragbench " + shlex.join(args.argv)}
+    if args.shard:
+        total = len(records)
+        records = shard(records, args.shard)
+        meta |= {"shard": args.shard.strip(), "answers_total": total}
+        if not args.quiet:
+            print(f"shard {args.shard}: {len(records)} of {total} answers", file=sys.stderr)
     params = parse_params(args.param)
     judge = load_judge(args.judge, params)
 
+    started = time.monotonic()
+
     def progress(i: int, n: int) -> None:
-        if not args.quiet and (i == n or i % 100 == 0):
-            print(f"  {i}/{n} answers", file=sys.stderr, flush=True)
+        if not args.quiet and (i == n or i % 25 == 0):
+            elapsed = time.monotonic() - started
+            print(f"  {i}/{n} answers, {elapsed:.0f}s", file=sys.stderr, flush=True)
 
     result = score_answers(
         judge,
@@ -161,8 +179,30 @@ def _cmd_faithfulness(args: argparse.Namespace) -> int:
         rounds=args.rounds,
         seed=args.seed,
         progress=progress,
-        meta={"answers_file": str(args.answers), "command": "ragbench " + shlex.join(args.argv)},
+        meta=meta,
     )
+    _print_faithfulness(result)
+    if args.out:
+        result.save(args.out)
+        print(f"wrote {args.out}", file=sys.stderr)
+    return 0
+
+
+def _cmd_faithfulness_merge(args: argparse.Namespace) -> int:
+    shards = [json.loads(Path(p).read_text(encoding="utf-8")) for p in args.shards]
+    result = merge_results(
+        shards,
+        rounds=args.rounds,
+        seed=args.seed,
+        meta={"command": "ragbench " + shlex.join(args.argv)},
+    )
+    _print_faithfulness(result)
+    result.save(args.out)
+    print(f"wrote {args.out}", file=sys.stderr)
+    return 0
+
+
+def _print_faithfulness(result: FaithfulnessResult) -> None:
     s = result.summary
     f = s["faithfulness"]
     print(
@@ -180,10 +220,6 @@ def _cmd_faithfulness(args: argparse.Namespace) -> int:
             f"accuracy {a['accuracy_all_supported']:.4f} calling an answer faithful when every "
             "claim is supported"
         )
-    if args.out:
-        result.save(args.out)
-        print(f"wrote {args.out}", file=sys.stderr)
-    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -288,8 +324,28 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--rounds", type=int, default=2000, help="bootstrap resamples")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=None, help="write per-answer results to this JSON file")
+    p.add_argument(
+        "--shard",
+        default=None,
+        metavar="K/N",
+        help="score only the K-th of N contiguous slices of the answers (K from 0); "
+        "join the shards with `ragbench faithfulness-merge`",
+    )
     p.add_argument("--quiet", action="store_true")
     p.set_defaults(func=_cmd_faithfulness)
+
+    p = sub.add_parser(
+        "faithfulness-merge",
+        help="join sharded faithfulness results into one",
+        description="Join the result files of a sharded `ragbench faithfulness` run into the "
+        "file an unsharded run would have written, with the summary and agreement recomputed "
+        "over every answer.",
+    )
+    p.add_argument("shards", nargs="+", type=Path, help="result files written with --shard")
+    p.add_argument("--out", required=True, help="write the joined result here")
+    p.add_argument("--rounds", type=int, default=2000, help="bootstrap resamples")
+    p.add_argument("--seed", type=int, default=0)
+    p.set_defaults(func=_cmd_faithfulness_merge)
 
     p = sub.add_parser("report", help="Markdown table of result files")
     p.add_argument("results", nargs="+", type=Path)
