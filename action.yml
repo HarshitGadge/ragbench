@@ -1,0 +1,135 @@
+name: ragbench gate
+description: >-
+  Fail a pull request when a retriever change drops nDCG@10 (or another metric)
+  below a committed baseline run, using a paired bootstrap on the same queries.
+author: Harshit Gadge
+branding:
+  icon: bar-chart-2
+  color: blue
+
+inputs:
+  data:
+    description: BEIR-format dataset folder in your repo (corpus.jsonl, queries.jsonl, qrels/)
+    required: true
+  retriever:
+    description: Retriever to evaluate, as module:Name or path/to/file.py:Name
+    required: true
+  baseline:
+    description: Baseline result JSON from an earlier `ragbench run`, committed to your repo
+    required: true
+  params:
+    description: Retriever parameters, one KEY=VALUE per line (values parsed as JSON)
+    required: false
+    default: ""
+  metrics:
+    description: Comma-separated metrics to gate on
+    required: false
+    default: ndcg@10
+  max-drop:
+    description: Largest allowed drop in each metric, for example 0.01
+    required: false
+    default: "0.01"
+  mode:
+    description: "mean: fail on the mean change. ci: fail only if the whole 95% CI is below -max-drop"
+    required: false
+    default: mean
+  split:
+    description: Qrels split to evaluate
+    required: false
+    default: test
+  depth:
+    description: Results requested per query; must match the baseline run
+    required: false
+    default: "100"
+  install:
+    description: >-
+      Command that installs your own code into the same Python, for example
+      "pip install -e ." when the retriever is a module:Name in your package
+    required: false
+    default: ""
+  extras:
+    description: ragbench extras to install, for example dense or "dense,stem"
+    required: false
+    default: ""
+  python-version:
+    description: Python version for the run
+    required: false
+    default: "3.12"
+
+outputs:
+  passed:
+    description: '"true" when every metric is within the allowed drop'
+    value: ${{ steps.gate.outputs.passed }}
+  result:
+    description: Path of the candidate run's result JSON
+    value: ${{ steps.run.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install ragbench
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        EXTRAS: ${{ inputs.extras }}
+      run: |
+        if [ -n "$EXTRAS" ]; then
+          pip install --quiet "${ACTION_PATH}[${EXTRAS}]"
+        else
+          pip install --quiet "${ACTION_PATH}"
+        fi
+
+    - name: Install your code
+      if: inputs.install != ''
+      shell: bash
+      env:
+        INSTALL: ${{ inputs.install }}
+      run: bash -c "$INSTALL"
+
+    - name: Evaluate the candidate retriever
+      id: run
+      shell: bash
+      env:
+        DATA: ${{ inputs.data }}
+        RETRIEVER: ${{ inputs.retriever }}
+        PARAMS: ${{ inputs.params }}
+        SPLIT: ${{ inputs.split }}
+        DEPTH: ${{ inputs.depth }}
+      run: |
+        args=()
+        while IFS= read -r line; do
+          line="${line#"${line%%[![:space:]]*}"}"
+          [ -n "$line" ] && args+=(--param "$line")
+        done <<< "$PARAMS"
+        out="${RUNNER_TEMP}/ragbench-candidate.json"
+        ragbench run --data "$DATA" --retriever "$RETRIEVER" --split "$SPLIT" \
+          --depth "$DEPTH" --name candidate --out "$out" --quiet "${args[@]}"
+        echo "result=$out" >> "$GITHUB_OUTPUT"
+
+    - name: Gate against the baseline
+      id: gate
+      shell: bash
+      env:
+        BASELINE: ${{ inputs.baseline }}
+        CANDIDATE: ${{ steps.run.outputs.result }}
+        METRICS: ${{ inputs.metrics }}
+        MAX_DROP: ${{ inputs.max-drop }}
+        MODE: ${{ inputs.mode }}
+      run: |
+        args=()
+        IFS=',' read -ra ms <<< "$METRICS"
+        for m in "${ms[@]}"; do
+          m="${m//[[:space:]]/}"
+          [ -n "$m" ] && args+=(--metric "$m")
+        done
+        if ragbench gate "$BASELINE" "$CANDIDATE" --max-drop "$MAX_DROP" --mode "$MODE" "${args[@]}"; then
+          echo "passed=true" >> "$GITHUB_OUTPUT"
+        else
+          code=$?
+          echo "passed=false" >> "$GITHUB_OUTPUT"
+          exit "$code"
+        fi

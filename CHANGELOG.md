@@ -10,6 +10,16 @@
 - The benchmark runs Hybrid and Rerank too, one job per dataset, and the README shows
   one paired comparison per pair of runs.
 
+## 1.1.0 (2026-11-27)
+
+- `ragbench gate`: compares a candidate run with a baseline on the same queries and
+  exits 1 when a metric drops by more than `--max-drop`, judged on the mean change or,
+  with `--mode ci`, on the whole 95% interval. Runs that differ in split, depth, nDCG
+  cutoff or identical-id handling are refused. Writes a Markdown summary to
+  `$GITHUB_STEP_SUMMARY` when set.
+- `action.yml`: a GitHub Action that runs the candidate retriever and the gate, so a
+  pull request fails when retrieval quality drops below a committed baseline.
+
 ## 1.0.0 (2026-11-27)
 
 First stable release.
