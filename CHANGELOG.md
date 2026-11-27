@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Results: both faithfulness judges scored against RAGTruth's 875 human-labelled QA
+  answers, committed under `results/faithfulness/ragtruth-qa/` and rendered in the README.
 - `ragbench faithfulness --shard K/N` scores one slice of the answers, and
   `ragbench faithfulness-merge` joins the slices into the file an unsharded run writes.
   The human-label workflow now scores NLI in 16 shards.

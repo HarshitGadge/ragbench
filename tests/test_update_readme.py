@@ -67,7 +67,8 @@ def test_faithfulness_block(tmp_path):
     from ragbench.faithfulness import load_answers, score_answers
     from ragbench.judges import TokenOverlap
 
-    records = load_answers(ROOT / "tests/fixtures/faithfulness/answers.jsonl")
+    records_file = ROOT / "tests/fixtures/faithfulness/answers.jsonl"
+    records = load_answers(records_file)
     result = score_answers(TokenOverlap(), records, name="token-overlap", rounds=100)
     folder = tmp_path / "results" / "faithfulness" / "fixture"
     result.save(folder / "token-overlap.json")
@@ -83,6 +84,8 @@ def test_faithfulness_block(tmp_path):
     text = readme.read_text()
     assert "| fixture (5) | token-overlap | 0.500 (" in text
     assert "| 0.750 | 0.800 |" in text
+    faithful = sum(json.loads(line)["label"] for line in records_file.read_text().splitlines())
+    assert f"In fixture, {faithful} of 5 answers are labelled faithful" in text
     assert "old" not in text
     assert update_readme.main([*args, "--check"]) == 0
 

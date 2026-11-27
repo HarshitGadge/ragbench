@@ -89,11 +89,22 @@ def render_faithfulness(results_dir: Path) -> str:
             f"| {dataset} ({r['summary']['scored']}) | {r['name']} | "
             f"{f['mean']:.3f} ({f['ci'][0]:.3f} to {f['ci'][1]:.3f}) | {auc} | {acc} |"
         )
+    # How accuracy compares with always answering "faithful", per labelled dataset.
+    base = {}
+    for dataset, r in runs:
+        a = r.get("agreement")
+        if a and a.get("labelled"):
+            base.setdefault(dataset, (a["faithful"], a["labelled"]))
+    base_note = "".join(
+        f" In {d}, {f} of {n} answers are labelled faithful, so calling every answer "
+        f"faithful scores {f / n:.3f} accuracy."
+        for d, (f, n) in sorted(base.items())
+    )
     lines.append(
         "\nFaithfulness is the mean share of supported claims per answer, with a 95% "
         "bootstrap interval. AUC is the chance a faithful answer outscores an unfaithful "
         "one; accuracy calls an answer faithful when every claim is supported; both against "
-        f"the human labels. {_source([r['meta'] for _, r in runs])}.\n"
+        f"the human labels.{base_note} {_source([r['meta'] for _, r in runs])}.\n"
     )
     return "\n".join(lines)
 

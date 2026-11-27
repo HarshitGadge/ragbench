@@ -304,6 +304,21 @@ ragbench download ragtruth-qa --dest data
 ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl --judge ragbench.judges:NLI
 ```
 
+A long run can be split with `--shard K/N` (the K-th of N slices, K from 0) and joined
+with `ragbench faithfulness-merge shard-*.json --out result.json`, which gives the same
+file as one unsplit run. The Faithfulness workflow scores the NLI judge this way, in 16
+shards, and commits both judges' results to
+[`results/faithfulness/`](results/faithfulness). This table is generated from them:
+
+<!-- faithfulness:start -->
+| Answers | Judge | Faithfulness | AUC vs humans | Accuracy vs humans |
+|---|---|---|---|---|
+| ragtruth-qa (875) | nli-deberta-v3-base | 0.728 (0.711 to 0.747) | 0.695 | 0.457 |
+| ragtruth-qa (875) | token-overlap | 0.691 (0.672 to 0.712) | 0.735 | 0.466 |
+
+Faithfulness is the mean share of supported claims per answer, with a 95% bootstrap interval. AUC is the chance a faithful answer outscores an unfaithful one; accuracy calls an answer faithful when every claim is supported; both against the human labels. In ragtruth-qa, 715 of 875 answers are labelled faithful, so calling every answer faithful scores 0.817 accuracy. ragbench 1.1.1, commit 36bd0a2, workflow run [46068806383](https://github.com/HarshitGadge/ragbench/actions/runs/46068806383).
+<!-- faithfulness:end -->
+
 ## Make a results table
 
 ```bash
