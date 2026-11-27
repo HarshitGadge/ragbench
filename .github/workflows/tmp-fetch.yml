@@ -1,0 +1,21 @@
+name: tmp fetch results
+on:
+  push:
+    branches: [tmp-fetch-results]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sSL -H "Authorization: Bearer $GH_TOKEN" -o a.zip \
+            https://api.github.com/repos/${{ github.repository }}/actions/artifacts/15171452409/zip
+          sha256sum a.zip
+          echo "BEGIN-B64"
+          base64 -w 0 a.zip
+          echo
+          echo "END-B64"
