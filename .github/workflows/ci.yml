@@ -109,3 +109,23 @@ jobs:
         run: |
           echo "same=$SAME worse=$WORSE worse_outcome=$WORSE_OUTCOME"
           [ "$SAME" = "true" ] && [ "$WORSE" = "false" ] && [ "$WORSE_OUTCOME" = "failure" ]
+
+  nli-smoke:
+    # Exercises the real NLI judge end to end (downloads a ~740 MB model; CPU torch).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-deberta-v3-base-mnli-fever-anli
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -e '.[nli]'
+      - name: Score the fixture answers with NLI
+        run: |
+          ragbench faithfulness --answers tests/fixtures/faithfulness/answers.jsonl \
+            --judge ragbench.judges:NLI --out /tmp/nli.json
+          python -c "import json; d = json.load(open('/tmp/nli.json')); assert d['summary']['claims'] > 0 and d['agreement'], d['summary']"
