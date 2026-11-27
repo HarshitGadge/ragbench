@@ -17,7 +17,35 @@ on:
 permissions:
   contents: read
 
+env:
+  TOKENIZERS_PARALLELISM: "false"
+
 jobs:
+  # A quick timing run on 40 answers, so a slow or stuck model shows up in minutes.
+  nli-speed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-deberta-v3-base-mnli-fever-anli
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -e '.[nli]'
+      - run: ragbench download ragtruth-qa --dest data
+      - name: Time NLI on the first 40 answers
+        timeout-minutes: 20
+        run: |
+          nproc
+          python -c "import torch; print('torch', torch.__version__, 'threads', torch.get_num_threads())"
+          head -n 40 data/ragtruth-qa/answers.jsonl > /tmp/sample.jsonl
+          time ragbench faithfulness --answers /tmp/sample.jsonl \
+            --judge ragbench.judges:NLI --out /tmp/sample.json
+
   ragtruth:
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -35,6 +63,7 @@ jobs:
       - name: Build ragtruth-qa
         run: ragbench download ragtruth-qa --dest data
       - name: Score with each judge
+        timeout-minutes: 150
         run: |
           out=results/faithfulness/ragtruth-qa
           rm -rf "$out" && mkdir -p "$out"
@@ -44,7 +73,7 @@ jobs:
             --out "$out/token-overlap.json" --quiet
           ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl \
             --judge ragbench.judges:NLI --name nli-deberta-v3-base \
-            --out "$out/nli-deberta-v3-base.json" --quiet
+            --out "$out/nli-deberta-v3-base.json"
       - uses: actions/upload-artifact@v4
         with:
           name: faithfulness-results

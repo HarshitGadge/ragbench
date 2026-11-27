@@ -12,7 +12,7 @@ claim) pair. It needs ``pip install 'ragbench-eval[nli]'``.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 _WORD = re.compile(r"[a-z0-9]+(?:[.'-][a-z0-9]+)*")
@@ -101,9 +101,8 @@ class NLI:
         import torch
 
         tokenizer, model, entail = self._load()
-        out: list[float] = []
-        for start in range(0, len(pairs), self.batch_size):
-            chunk = pairs[start : start + self.batch_size]
+
+        def score(chunk: list[tuple[str, str]]) -> list[float]:
             enc = tokenizer(
                 [p for p, _ in chunk],
                 [h for _, h in chunk],
@@ -112,10 +111,11 @@ class NLI:
                 padding=True,
                 return_tensors="pt",
             ).to(self.device)
-            with torch.no_grad():
+            with torch.inference_mode():
                 probs = torch.softmax(model(**enc).logits.float(), dim=-1)
-            out.extend(probs[:, entail].tolist())
-        return out
+            return probs[:, entail].tolist()
+
+        return by_length(pairs, self.batch_size, score)
 
     def support_batch(self, items: list[tuple[str, list[str], str]]) -> list[float]:
         pairs: list[tuple[str, str]] = []
@@ -132,6 +132,27 @@ class NLI:
 
     def support(self, claim: str, contexts: list[str], question: str = "") -> float:
         return self.support_batch([(claim, contexts, question)])[0]
+
+
+def by_length(
+    pairs: list[tuple[str, str]],
+    batch_size: int,
+    score: Callable[[list[tuple[str, str]]], list[float]],
+) -> list[float]:
+    """Score ``pairs`` in batches of similar length; return scores in input order.
+
+    Sorting first means each padded batch is mostly real tokens.
+    """
+    order = sorted(range(len(pairs)), key=lambda i: len(pairs[i][0]) + len(pairs[i][1]))
+    out = [0.0] * len(pairs)
+    for start in range(0, len(order), batch_size):
+        idx = order[start : start + batch_size]
+        scores = score([pairs[i] for i in idx])
+        if len(scores) != len(idx):
+            raise ValueError(f"model returned {len(scores)} scores for {len(idx)} pairs")
+        for i, value in zip(idx, scores, strict=True):
+            out[i] = float(value)
+    return out
 
 
 def entailment_index(id2label: Mapping[Any, str]) -> int:

@@ -13,6 +13,8 @@
   the judge's agreement with them (ROC AUC and accuracy).
 - `ragbench.judges:TokenOverlap`: a dependency-free lexical baseline judge.
 - `ragbench.judges:NLI`: a natural-language-inference model judge, with the `nli` extra.
+  It batches pairs of similar length, so little of each batch is padding.
+- `ragbench faithfulness` reports progress every 25 answers, with the time so far.
 - `ragbench download ragtruth-qa`: 875 human-labelled RAGTruth answers, pinned and
   checksummed, for checking a judge. A "Faithfulness" workflow scores them with each judge.
 - Faithfulness results record the ragbench version, the CI run and the commit, like

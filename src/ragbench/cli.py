@@ -7,6 +7,7 @@ import json
 import os
 import shlex
 import sys
+import time
 from pathlib import Path
 
 from ragbench import __version__, ragtruth
@@ -147,9 +148,12 @@ def _cmd_faithfulness(args: argparse.Namespace) -> int:
     params = parse_params(args.param)
     judge = load_judge(args.judge, params)
 
+    started = time.monotonic()
+
     def progress(i: int, n: int) -> None:
-        if not args.quiet and (i == n or i % 100 == 0):
-            print(f"  {i}/{n} answers", file=sys.stderr, flush=True)
+        if not args.quiet and (i == n or i % 25 == 0):
+            elapsed = time.monotonic() - started
+            print(f"  {i}/{n} answers, {elapsed:.0f}s", file=sys.stderr, flush=True)
 
     result = score_answers(
         judge,
