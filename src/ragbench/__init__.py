@@ -6,7 +6,7 @@ from ragbench.retriever import Hit, Retriever
 from ragbench.runner import RunResult, evaluate
 from ragbench.stats import bootstrap_ci, paired_bootstrap
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = [
     "Dataset",

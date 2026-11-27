@@ -76,3 +76,34 @@ jobs:
           ragbench run --data tests/fixtures/tiny --retriever ragbench.retrievers:Dense \
             --param model=BAAI/bge-small-en-v1.5 --out /tmp/dense.json --quiet
           python -c "import json; d = json.load(open('/tmp/dense.json')); assert d['metrics']['recall@10']['mean'] > 0, d['metrics']"
+
+  gate-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Same retriever as the baseline passes
+        id: same
+        uses: ./
+        with:
+          data: tests/fixtures/tiny
+          retriever: ragbench.retrievers:BM25
+          baseline: tests/fixtures/gate/tiny-bm25.json
+          metrics: ndcg@10,recall@10
+      - name: A worse retriever fails
+        id: worse
+        continue-on-error: true
+        uses: ./
+        with:
+          data: tests/fixtures/tiny
+          retriever: examples/overlap.py:WordOverlap
+          params: |
+            min_overlap=2
+          baseline: tests/fixtures/gate/tiny-bm25.json
+      - name: Check both outcomes
+        env:
+          SAME: ${{ steps.same.outputs.passed }}
+          WORSE: ${{ steps.worse.outputs.passed }}
+          WORSE_OUTCOME: ${{ steps.worse.outcome }}
+        run: |
+          echo "same=$SAME worse=$WORSE worse_outcome=$WORSE_OUTCOME"
+          [ "$SAME" = "true" ] && [ "$WORSE" = "false" ] && [ "$WORSE_OUTCOME" = "failure" ]
