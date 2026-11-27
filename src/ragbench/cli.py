@@ -1,4 +1,4 @@
-"""``ragbench`` command line: download, info, run, compare, gate, report."""
+"""``ragbench`` command line: download, info, run, compare, gate, report, faithfulness."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from ragbench import __version__
 from ragbench.compare import compare_runs
 from ragbench.datasets import load_beir
 from ragbench.download import KNOWN, download
+from ragbench.faithfulness import load_answers, load_judge, score_answers
 from ragbench.gate import MODES, gate
 from ragbench.report import DEFAULT_METRICS, markdown_table
 from ragbench.retriever import load_retriever, parse_params
@@ -112,6 +113,50 @@ def _cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_faithfulness(args: argparse.Namespace) -> int:
+    records = load_answers(args.answers)
+    params = parse_params(args.param)
+    judge = load_judge(args.judge, params)
+
+    def progress(i: int, n: int) -> None:
+        if not args.quiet and (i == n or i % 100 == 0):
+            print(f"  {i}/{n} answers", file=sys.stderr, flush=True)
+
+    result = score_answers(
+        judge,
+        records,
+        judge_spec=args.judge,
+        params=params,
+        name=args.name or "",
+        threshold=args.threshold,
+        rounds=args.rounds,
+        seed=args.seed,
+        progress=progress,
+        meta={"answers_file": str(args.answers), "command": "ragbench " + shlex.join(args.argv)},
+    )
+    s = result.summary
+    f = s["faithfulness"]
+    print(
+        f"faithfulness {f['mean']:.4f} (95% CI {f['ci'][0]:.4f} to {f['ci'][1]:.4f}), "
+        f"{s['scored']} answers, {s['claims']} claims, judge {result.name}, "
+        f"threshold {result.threshold}"
+    )
+    if s["no_claims"]:
+        print(f"{s['no_claims']} answers had no claim to score and were left out")
+    if result.agreement:
+        a = result.agreement
+        print(
+            f"agreement with {a['labelled']} human labels: ROC AUC {a['auc_faithfulness']:.4f} "
+            f"(mean support {a['auc_mean_support']:.4f}), "
+            f"accuracy {a['accuracy_all_supported']:.4f} calling an answer faithful when every "
+            "claim is supported"
+        )
+    if args.out:
+        result.save(args.out)
+        print(f"wrote {args.out}", file=sys.stderr)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ragbench", description=__doc__.split("\n")[0])
     parser.add_argument("--version", action="version", version=f"ragbench {__version__}")
@@ -183,6 +228,30 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.set_defaults(func=_cmd_gate)
 
+    p = sub.add_parser(
+        "faithfulness",
+        help="score whether generated answers are supported by their retrieved contexts",
+        description="Split each answer into claims, ask a judge whether the contexts support "
+        "each claim, and report the share of supported claims with a bootstrap CI. With "
+        "human labels in the answers file, also report how well the judge agrees with them.",
+    )
+    p.add_argument(
+        "--answers", required=True, type=Path, help="JSONL: id, question, contexts, answer"
+    )
+    p.add_argument(
+        "--judge",
+        default="ragbench.judges:TokenOverlap",
+        help="module:Name or path/file.py:Name (default: the lexical TokenOverlap baseline)",
+    )
+    p.add_argument("--param", action="append", default=[], metavar="KEY=VALUE")
+    p.add_argument("--name", default=None, help="label for this run (default: judge Name)")
+    p.add_argument("--threshold", type=float, default=0.5, help="support needed to count a claim")
+    p.add_argument("--rounds", type=int, default=2000, help="bootstrap resamples")
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--out", default=None, help="write per-answer results to this JSON file")
+    p.add_argument("--quiet", action="store_true")
+    p.set_defaults(func=_cmd_faithfulness)
+
     p = sub.add_parser("report", help="Markdown table of result files")
     p.add_argument("results", nargs="+", type=Path)
     p.add_argument("--metric", action="append", default=None)
@@ -197,7 +266,14 @@ def main(argv: list[str] | None = None) -> int:
     args.argv = argv
     try:
         return args.func(args)
-    except (FileNotFoundError, ValueError, KeyError, TypeError, ImportError) as exc:
+    except (
+        FileNotFoundError,
+        ValueError,
+        KeyError,
+        TypeError,
+        ImportError,
+        AttributeError,
+    ) as exc:
         print(f"ragbench: error: {exc}", file=sys.stderr)
         return 2
 

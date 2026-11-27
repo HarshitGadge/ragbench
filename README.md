@@ -13,6 +13,8 @@ get numbers you can defend: nDCG@10, Recall@10/100 and MRR@10 per query, a boots
   seed, Python and RAGBench versions, and every per-query score.
 - **A CI gate.** A GitHub Action fails a pull request when retrieval quality drops
   below a committed baseline, the way a coverage check does for tests.
+- **Answer faithfulness.** Scores whether generated answers are supported by their
+  retrieved contexts, with a pluggable judge and a check against human labels.
 
 Every number in this README comes from a result file in [`results/`](results), produced
 by [`scripts/benchmark.sh`](scripts/benchmark.sh) in the Benchmark workflow. The table
@@ -245,6 +247,37 @@ A retriever given as `path/to/file.py:Name` needs no `install`. Inputs `params` 
 `KEY=VALUE` per line), `mode`, `split`, `depth`, `extras` and `python-version` are
 optional too; see [`action.yml`](action.yml). Re-run the baseline
 command and commit the file when you mean to change the baseline.
+
+## Score answer faithfulness
+
+Retrieval metrics say whether the right passages were found, not whether the answer
+stuck to them. `ragbench faithfulness` scores generated answers: each answer is split
+into sentence claims, a judge rates how well the retrieved contexts support each claim,
+and the answer scores the share of claims at or above `--threshold` (0.5). The run
+reports the mean over answers with a bootstrap 95% interval.
+
+```bash
+ragbench faithfulness --answers answers.jsonl --out results/faithfulness.json
+```
+
+`answers.jsonl` has one answer per line:
+
+```json
+{"id": "q1", "question": "...", "contexts": ["retrieved passage", "..."], "answer": "..."}
+```
+
+Add `"label": 1` (faithful) or `0` (not) from a human reviewer, and the run also reports
+how well the judge agrees with the labels: ROC AUC, and accuracy when an answer counts
+as faithful only if every claim is supported. Check a judge this way before trusting
+its scores.
+
+The default judge, `ragbench.judges:TokenOverlap`, needs nothing installed. It is a
+lexical baseline: a claim counts as supported when its content words appear in one
+context. It cannot see paraphrase ("the CFPB" for "the Bureau") and only partly sees
+negation, so it is the floor a real judge has to beat. A judge is any object with
+`support(claim, contexts, question)` returning a score in [0, 1], loaded with
+`--judge module:Name` or `--judge path/to/file.py:Name`, like a retriever; a
+`support_batch(items)` method is used when present.
 
 ## Make a results table
 

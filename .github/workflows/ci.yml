@@ -55,6 +55,8 @@ jobs:
           /tmp/venv/bin/ragbench --version
           /tmp/venv/bin/ragbench run --data tests/fixtures/tiny \
             --retriever examples/overlap.py:WordOverlap --out /tmp/r.json --quiet
+          /tmp/venv/bin/ragbench faithfulness \
+            --answers tests/fixtures/faithfulness/answers.jsonl --out /tmp/f.json --quiet
 
   dense-smoke:
     # Exercises the real fastembed path end to end (downloads a ~67 MB ONNX model).

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `ragbench faithfulness`: splits generated answers into claims, asks a judge whether
+  the retrieved contexts support each one, and reports the share of supported claims
+  with a bootstrap 95% interval. With human labels in the answers file it also reports
+  the judge's agreement with them (ROC AUC and accuracy).
+- `ragbench.judges:TokenOverlap`: a dependency-free lexical baseline judge.
+- The command line reports a misspelled `module:Name` as an error instead of a traceback.
 - `Hybrid` retriever: reciprocal rank fusion of BM25 and Dense (`rrf_k=60`).
 - `Rerank` retriever: a fastembed cross-encoder over the top hits of a BM25, Dense or
   Hybrid first stage.
