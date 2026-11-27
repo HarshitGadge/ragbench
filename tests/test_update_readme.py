@@ -46,3 +46,18 @@ def test_empty_results_and_missing_markers(tmp_path):
     assert "No results yet" in readme.read_text()
     readme.write_text("no markers")
     assert update_readme.main(["--readme", str(readme), "--results", str(tmp_path)]) == 2
+
+
+def test_one_block_per_compared_pair(tiny, tmp_path):
+    from ragbench.compare import compare_runs
+
+    results = tmp_path / "results"
+    write_results(tiny, results)
+    good = evaluate(Oracle(tiny), tiny, name="oracle", bootstrap_rounds=100)
+    bad = evaluate(Nothing(), tiny, name="nothing", bootstrap_rounds=100)
+    row = compare_runs(good, bad, "ndcg@10", rounds=100).as_dict()
+    (results / "tiny" / "compare-oracle__nothing.json").write_text(json.dumps([row]))
+    text = update_readme.render(results)
+    assert "Paired bootstrap, oracle minus nothing, same queries:" in text
+    assert "Paired bootstrap, nothing minus oracle, same queries:" in text
+    assert "| tiny | oracle |" in text and "compare" not in text.split("Means")[0]

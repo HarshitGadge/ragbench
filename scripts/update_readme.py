@@ -4,7 +4,7 @@
     python scripts/update_readme.py --check   # exit 1 if README.md is out of date (CI)
 
 Nothing between the markers is typed by hand: the table comes from the result files
-and the comparison lines from each dataset's compare.json.
+and the comparison lines from each dataset's compare*.json files.
 """
 
 from __future__ import annotations
@@ -23,7 +23,11 @@ START, END = "<!-- results:start -->", "<!-- results:end -->"
 
 def render(results_dir: Path) -> str:
     runs = sorted(
-        (RunResult.load(p) for p in results_dir.glob("*/*.json") if p.name != "compare.json"),
+        (
+            RunResult.load(p)
+            for p in results_dir.glob("*/*.json")
+            if not p.name.startswith("compare")
+        ),
         key=lambda r: (r.dataset.get("name", ""), r.name),
     )
     if not runs:
@@ -39,18 +43,21 @@ def render(results_dir: Path) -> str:
         source += ", workflow run " + ", ".join(f"[{u.rsplit('/', 1)[-1]}]({u})" for u in ci_runs)
     lines.append(f"\nMeans over test queries with 95% bootstrap intervals; {source}.\n")
 
-    compares = sorted(results_dir.glob("*/compare.json"))
-    if compares:
-        lines.append("\nPaired bootstrap, dense minus BM25 (stemmed), same queries:\n")
-        for path in compares:
-            for row in json.loads(path.read_text()):
-                d = row["diff"]
-                verdict = "interval excludes 0" if row["significant"] else "interval includes 0"
-                lines.append(
-                    f"- {path.parent.name}, {row['metric']}: {d['mean']:+.4f} "
-                    f"(95% CI {d['ci'][0]:+.4f} to {d['ci'][1]:+.4f}, "
-                    f"{row['queries']} queries, {verdict})"
-                )
+    # One block per (baseline, candidate) pair, listing every dataset that compared them.
+    pairs: dict[tuple[str, str], list[str]] = {}
+    for path in sorted(results_dir.glob("*/compare*.json"), key=lambda p: (p.name, p.parent.name)):
+        for row in json.loads(path.read_text()):
+            d = row["diff"]
+            verdict = "interval excludes 0" if row["significant"] else "interval includes 0"
+            pairs.setdefault((row["baseline"], row["candidate"]), []).append(
+                f"- {path.parent.name}, {row['metric']}: {d['mean']:+.4f} "
+                f"(95% CI {d['ci'][0]:+.4f} to {d['ci'][1]:+.4f}, "
+                f"{row['queries']} queries, {verdict})"
+            )
+    for (baseline, candidate), rows in pairs.items():
+        lines.append(f"\nPaired bootstrap, {candidate} minus {baseline}, same queries:\n")
+        lines.extend(rows)
+    if pairs:
         lines.append("")
     return "\n".join(lines)
 
