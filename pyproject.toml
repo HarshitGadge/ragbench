@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ragbench"
-version = "0.1.0"
+version = "1.0.0"
 description = "Evaluate any retriever on BEIR-format data: nDCG, recall and MRR with bootstrap confidence intervals and paired comparisons."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -12,7 +12,7 @@ license = "MIT"
 authors = [{ name = "Harshit Gadge" }]
 keywords = ["rag", "retrieval", "evaluation", "beir", "information-retrieval", "benchmark"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",

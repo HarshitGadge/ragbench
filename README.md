@@ -61,8 +61,14 @@ python scripts/update_readme.py
 ## Install
 
 ```bash
-pip install git+https://github.com/HarshitGadge/ragbench
+pip install "git+https://github.com/HarshitGadge/ragbench@v1.0.0"
+
+# with the built-in dense retriever, stemming and the Hugging Face download fallback
+pip install "ragbench[dense,stem,hf] @ git+https://github.com/HarshitGadge/ragbench@v1.0.0"
 ```
+
+The core package has no runtime dependencies. Extras: `dense` (fastembed, numpy),
+`stem` (snowballstemmer), `hf` (pyarrow).
 
 ## Quick start
 

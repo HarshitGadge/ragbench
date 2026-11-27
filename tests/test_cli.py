@@ -175,3 +175,11 @@ def test_download_rejects_unknown_source(tmp_path):
 
     with pytest.raises(ValueError):
         download("x", tmp_path, source="ftp")
+
+
+def test_version_matches_package_metadata():
+    from importlib.metadata import version
+
+    import ragbench
+
+    assert ragbench.__version__ == version("ragbench")
