@@ -3,8 +3,8 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ragbench"
-version = "1.1.0"
+name = "ragbench-eval"
+version = "1.1.1"
 description = "Evaluate any retriever on BEIR-format data: nDCG, recall and MRR with bootstrap confidence intervals and paired comparisons."
 readme = "README.md"
 requires-python = ">=3.10"

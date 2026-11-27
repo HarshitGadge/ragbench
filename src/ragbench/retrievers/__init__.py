@@ -1,7 +1,7 @@
 """Built-in retrievers. Use them as baselines or as examples of the interface.
 
 ragbench run --data data/scifact --retriever ragbench.retrievers:BM25
-pip install 'ragbench[dense]'
+pip install 'ragbench-eval[dense]'
 ragbench run --data data/scifact --retriever ragbench.retrievers:Dense
 ragbench run --data data/scifact --retriever ragbench.retrievers:Hybrid
 ragbench run --data data/scifact --retriever ragbench.retrievers:Rerank

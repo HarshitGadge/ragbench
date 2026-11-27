@@ -6,7 +6,7 @@ reordered by that score. Anything past ``candidates`` keeps its first-stage
 order, so Recall@100 can only change when ``candidates`` reaches 100.
 
 The default scorer is fastembed's ``TextCrossEncoder`` (ONNX, CPU), installed
-with ``pip install 'ragbench[dense]'``. Pass ``scorer=`` to use anything else: an
+with ``pip install 'ragbench-eval[dense]'``. Pass ``scorer=`` to use anything else: an
 object with ``score(query, texts)`` returning one float per text.
 
     ragbench run --data data/scifact --retriever ragbench.retrievers:Rerank \\
@@ -32,7 +32,7 @@ class FastEmbedCrossEncoder:
         try:
             from fastembed.rerank.cross_encoder import TextCrossEncoder
         except ImportError as exc:  # pragma: no cover - depends on the extra
-            raise ImportError("Rerank needs: pip install 'ragbench[dense]'") from exc
+            raise ImportError("Rerank needs: pip install 'ragbench-eval[dense]'") from exc
         self.model = TextCrossEncoder(model_name=model)
         self.batch_size = batch_size
 

@@ -10,6 +10,12 @@
 - The benchmark runs Hybrid and Rerank too, one job per dataset, and the README shows
   one paired comparison per pair of runs.
 
+## 1.1.1 (unreleased)
+
+- The distribution is renamed `ragbench-eval`, because PyPI refuses `ragbench` as too
+  close to the existing `rag-bench` project. The import name and the `ragbench` command
+  are unchanged.
+
 ## 1.1.0 (2026-11-27)
 
 - `ragbench gate`: compares a candidate run with a baseline on the same queries and
