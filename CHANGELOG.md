@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `ragbench run --recall-k`: report recall at any cutoffs (repeat or comma-separate,
+  e.g. `--recall-k 5,10,100`); the default stays 10 and 100. The GitHub Action takes the
+  same cutoffs as `recall-k`.
 - `leaderboard.json`: every committed result's means, intervals, comparisons and
   provenance, without per-query scores, for web pages to read. CI checks it is current.
 - `ragbench faithfulness`: splits generated answers into claims, asks a judge whether

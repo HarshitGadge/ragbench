@@ -37,6 +37,12 @@ inputs:
     description: Qrels split to evaluate
     required: false
     default: test
+  recall-k:
+    description: >-
+      Comma-separated recall cutoffs to compute, for example 5,10,100, so you can gate
+      on recall@5; leave empty for the default 10 and 100
+    required: false
+    default: ""
   depth:
     description: Results requested per query; must match the baseline run
     required: false
@@ -99,8 +105,10 @@ runs:
         PARAMS: ${{ inputs.params }}
         SPLIT: ${{ inputs.split }}
         DEPTH: ${{ inputs.depth }}
+        RECALL_K: ${{ inputs.recall-k }}
       run: |
         args=()
+        if [ -n "$RECALL_K" ]; then args+=(--recall-k "$RECALL_K"); fi
         while IFS= read -r line; do
           line="${line#"${line%%[![:space:]]*}"}"
           [ -n "$line" ] && args+=(--param "$line")

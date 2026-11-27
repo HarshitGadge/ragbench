@@ -127,6 +127,11 @@ def evaluate(
     as BEIR's own evaluation does by default. It matters for datasets such as ArguAna,
     where every query is also a corpus document and would otherwise retrieve itself.
     """
+    recall_ks = tuple(recall_ks)
+    if not recall_ks or any(not isinstance(k, int) or k < 1 for k in recall_ks):
+        raise ValueError(f"recall_ks must be whole numbers of at least 1, got {recall_ks}")
+    if len(set(recall_ks)) != len(recall_ks):
+        raise ValueError(f"recall_ks has a repeated cutoff: {recall_ks}")
     if depth < max((ndcg_k, *recall_ks)):
         raise ValueError(f"depth {depth} is shallower than the deepest cutoff")
 

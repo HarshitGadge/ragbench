@@ -119,6 +119,13 @@ ragbench run --data data/scifact --retriever examples/overlap.py:WordOverlap
 ```
 
 `run` prints a Markdown table and writes `results/<dataset>__<name>.json`.
+It reports nDCG@10, MRR@10, Recall@10 and Recall@100. To report recall at other
+cutoffs, for example the top 5 that an agent actually reads, pass `--recall-k`: it can
+be repeated or comma-separated, and replaces the default 10 and 100.
+
+```bash
+ragbench run --data data/scifact --retriever ragbench.retrievers:BM25 --recall-k 5,10,100
+```
 
 ## Built-in retrievers
 
@@ -245,7 +252,8 @@ jobs:
 
 The job summary shows a table of baseline, candidate and change with its interval.
 A retriever given as `path/to/file.py:Name` needs no `install`. Inputs `params` (one
-`KEY=VALUE` per line), `mode`, `split`, `depth`, `extras` and `python-version` are
+`KEY=VALUE` per line), `mode`, `split`, `depth`, `recall-k` (cutoffs such as `5,10,100`,
+to gate on `recall@5`), `extras` and `python-version` are
 optional too; see [`action.yml`](action.yml). Re-run the baseline
 command and commit the file when you mean to change the baseline.
 

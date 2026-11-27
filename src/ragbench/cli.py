@@ -40,7 +40,30 @@ def _cmd_info(args: argparse.Namespace) -> int:
     return 0
 
 
+def _recall_ks(values: list[str] | None) -> tuple[int, ...]:
+    """``--recall-k 5 --recall-k 10`` or ``--recall-k 5,10``; default 10 and 100."""
+    if not values:
+        return (10, 100)
+    ks: set[int] = set()
+    for value in values:
+        for part in value.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                k = int(part)
+            except ValueError:
+                raise ValueError(f"--recall-k takes whole numbers, not {part!r}") from None
+            if k < 1:
+                raise ValueError(f"--recall-k must be at least 1, not {k}")
+            ks.add(k)
+    if not ks:
+        raise ValueError("--recall-k needs at least one cutoff")
+    return tuple(sorted(ks))
+
+
 def _cmd_run(args: argparse.Namespace) -> int:
+    recall_ks = _recall_ks(args.recall_k)
     dataset = load_beir(args.data, args.split)
     params = parse_params(args.param)
     retriever = load_retriever(args.retriever, params)
@@ -55,6 +78,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         dataset,
         name=name,
         depth=args.depth,
+        recall_ks=recall_ks,
         limit=args.limit,
         bootstrap_rounds=args.rounds,
         seed=args.seed,
@@ -189,6 +213,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", default=None, help="label for this run (default: Name)")
     p.add_argument("--split", default="test")
     p.add_argument("--depth", type=int, default=100, help="results requested per query")
+    p.add_argument(
+        "--recall-k",
+        action="append",
+        default=None,
+        metavar="K",
+        help="report recall@K; repeat or comma-separate, e.g. --recall-k 5,10,100 "
+        "(default: 10 and 100)",
+    )
     p.add_argument("--limit", type=int, default=None, help="only the first N queries")
     p.add_argument("--rounds", type=int, default=2000, help="bootstrap resamples")
     p.add_argument("--seed", type=int, default=0)

@@ -93,6 +93,19 @@ jobs:
           retriever: ragbench.retrievers:BM25
           baseline: tests/fixtures/gate/tiny-bm25.json
           metrics: ndcg@10,recall@10
+      - name: Extra recall cutoffs pass through to the run
+        id: recall
+        uses: ./
+        with:
+          data: tests/fixtures/tiny
+          retriever: ragbench.retrievers:BM25
+          baseline: tests/fixtures/gate/tiny-bm25.json
+          metrics: recall@10
+          recall-k: 5,10
+      - name: The candidate run has recall@5
+        env:
+          RESULT: ${{ steps.recall.outputs.result }}
+        run: python -c "import json, os; d = json.load(open(os.environ['RESULT'])); assert d['settings']['recall_ks'] == [5, 10], d['settings']"
       - name: A worse retriever fails
         id: worse
         continue-on-error: true
