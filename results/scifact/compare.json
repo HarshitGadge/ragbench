@@ -1,0 +1,36 @@
+[
+  {
+    "metric": "ndcg@10",
+    "baseline": "bm25-stem",
+    "candidate": "dense-bge-small",
+    "baseline_mean": 0.6804,
+    "candidate_mean": 0.7201,
+    "diff": {
+      "mean": 0.0397,
+      "ci": [
+        0.0051,
+        0.073
+      ],
+      "level": 0.95
+    },
+    "queries": 300,
+    "significant": true
+  },
+  {
+    "metric": "recall@100",
+    "baseline": "bm25-stem",
+    "candidate": "dense-bge-small",
+    "baseline_mean": 0.922,
+    "candidate_mean": 0.9533,
+    "diff": {
+      "mean": 0.0313,
+      "ci": [
+        -0.0013,
+        0.066
+      ],
+      "level": 0.95
+    },
+    "queries": 300,
+    "significant": false
+  }
+]
