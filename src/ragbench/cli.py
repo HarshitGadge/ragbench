@@ -1,9 +1,10 @@
-"""``ragbench`` command line: download, info, run, compare, report."""
+"""``ragbench`` command line: download, info, run, compare, gate, report."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import shlex
 import sys
 from pathlib import Path
@@ -12,6 +13,7 @@ from ragbench import __version__
 from ragbench.compare import compare_runs
 from ragbench.datasets import load_beir
 from ragbench.download import KNOWN, download
+from ragbench.gate import MODES, gate
 from ragbench.report import DEFAULT_METRICS, markdown_table
 from ragbench.retriever import load_retriever, parse_params
 from ragbench.runner import RunResult, evaluate
@@ -83,6 +85,26 @@ def _cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_gate(args: argparse.Namespace) -> int:
+    base, cand = RunResult.load(args.baseline), RunResult.load(args.candidate)
+    result = gate(
+        base,
+        cand,
+        metrics=args.metric or ["ndcg@10"],
+        max_drop=args.max_drop,
+        mode=args.mode,
+        rounds=args.rounds,
+        seed=args.seed,
+    )
+    for check in result.checks:
+        print(check.line())
+    summary = args.summary or os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as fh:
+            fh.write(result.markdown())
+    return 0 if result.passed else 1
+
+
 def _cmd_report(args: argparse.Namespace) -> int:
     runs = [RunResult.load(p) for p in args.results]
     runs.sort(key=lambda r: (r.dataset.get("name", ""), r.name))
@@ -135,6 +157,31 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_cmd_compare)
+
+    p = sub.add_parser(
+        "gate",
+        help="exit 1 when a candidate run drops below a baseline (for CI)",
+        description="Compare a candidate run with a baseline run on the same queries and "
+        "exit 1 if any metric dropped by more than --max-drop.",
+    )
+    p.add_argument("baseline", type=Path)
+    p.add_argument("candidate", type=Path)
+    p.add_argument("--metric", action="append", default=None, help="repeatable; ndcg@10")
+    p.add_argument("--max-drop", type=float, default=0.01, help="allowed drop in the metric (0.01)")
+    p.add_argument(
+        "--mode",
+        choices=list(MODES),
+        default="mean",
+        help="mean: fail on the mean change; ci: fail only if the whole 95%% CI is below",
+    )
+    p.add_argument("--rounds", type=int, default=2000)
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument(
+        "--summary",
+        default=None,
+        help="append a Markdown summary here (default: $GITHUB_STEP_SUMMARY if set)",
+    )
+    p.set_defaults(func=_cmd_gate)
 
     p = sub.add_parser("report", help="Markdown table of result files")
     p.add_argument("results", nargs="+", type=Path)

@@ -11,6 +11,8 @@ get numbers you can defend: nDCG@10, Recall@10/100 and MRR@10 per query, a boots
   `pytrec_eval` on randomised runs with graded judgements.
 - **Reproducible results.** Each result file records the exact command, parameters,
   seed, Python and RAGBench versions, and every per-query score.
+- **A CI gate.** A GitHub Action fails a pull request when retrieval quality drops
+  below a committed baseline, the way a coverage check does for tests.
 
 Every number in this README comes from a result file in [`results/`](results), produced
 by [`scripts/benchmark.sh`](scripts/benchmark.sh) in the Benchmark workflow. The table
@@ -146,6 +148,51 @@ ragbench compare results/scifact__baseline.json results/scifact__mine.json --met
 The difference is resampled over queries (2,000 rounds, seeded), so the interval says
 whether the change would survive a different sample of questions. Both runs must cover
 the same queries.
+
+## Gate pull requests on retrieval quality
+
+`ragbench gate` compares a candidate run with a baseline run on the same queries and
+exits 1 when a metric dropped by more than `--max-drop`:
+
+```bash
+ragbench gate baseline.json candidate.json --metric ndcg@10 --max-drop 0.01
+```
+
+With `--mode mean` (the default) it fails on the mean change. With `--mode ci` it fails
+only when the whole 95% interval for the change is below `-max-drop`, so a drop that
+could be noise doesn't fail the build. Runs that differ in split, depth, nDCG cutoff
+or identical-id handling aren't comparable, and the gate refuses them.
+
+The same check runs as a GitHub Action. Commit a small BEIR-format evaluation set and a
+baseline run, then add a workflow:
+
+```bash
+ragbench run --data eval/my-set --retriever my_app.search:Retriever --out eval/baseline.json
+```
+
+```yaml
+# .github/workflows/retrieval.yml
+on: pull_request
+jobs:
+  retrieval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: HarshitGadge/ragbench@v1.1.0
+        with:
+          install: pip install -e .   # so the action can import my_app
+          data: eval/my-set
+          retriever: my_app.search:Retriever
+          baseline: eval/baseline.json
+          metrics: ndcg@10,recall@100
+          max-drop: "0.01"
+```
+
+The job summary shows a table of baseline, candidate and change with its interval.
+A retriever given as `path/to/file.py:Name` needs no `install`. Inputs `params` (one
+`KEY=VALUE` per line), `mode`, `split`, `depth`, `extras` and `python-version` are
+optional too; see [`action.yml`](action.yml). Re-run the baseline
+command and commit the file when you mean to change the baseline.
 
 ## Make a results table
 
