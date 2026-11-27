@@ -87,6 +87,25 @@ def _ranking(qid: str, result: Any, depth: int, ignore_identical_ids: bool) -> l
     return ranking[:depth]
 
 
+def environment() -> dict:
+    """Where and when a run happened: versions, time, and the CI run and commit if any."""
+    from ragbench import __version__
+
+    ci_run = None
+    if os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("GITHUB_RUN_ID"):
+        server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+        repo, run_id = os.environ.get("GITHUB_REPOSITORY"), os.environ["GITHUB_RUN_ID"]
+        ci_run = f"{server}/{repo}/actions/runs/{run_id}"
+    return {
+        "ragbench": __version__,
+        "python": platform.python_version(),
+        "platform": platform.platform(terse=True),
+        "created": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+        "git_sha": os.environ.get("GITHUB_SHA"),
+        "ci_run": ci_run,
+    }
+
+
 def evaluate(
     retriever: Any,
     dataset: Dataset,
@@ -147,21 +166,7 @@ def evaluate(
         "mean": round(statistics.fmean(latencies), 3),
         "batched": callable(batch),
     }
-    from ragbench import __version__
-
-    ci_run = None
-    if os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("GITHUB_RUN_ID"):
-        server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
-        repo, run_id = os.environ.get("GITHUB_REPOSITORY"), os.environ["GITHUB_RUN_ID"]
-        ci_run = f"{server}/{repo}/actions/runs/{run_id}"
-    run_meta = {
-        "ragbench": __version__,
-        "python": platform.python_version(),
-        "platform": platform.platform(terse=True),
-        "created": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
-        "git_sha": os.environ.get("GITHUB_SHA"),
-        "ci_run": ci_run,
-    } | (meta or {})
+    run_meta = environment() | (meta or {})
     return RunResult(
         name=name,
         dataset=dataset.summary() | {"evaluated_queries": len(rankings)},

@@ -24,6 +24,7 @@ dependencies = []
 dense = ["fastembed>=0.4", "numpy>=1.26"]
 stem = ["snowballstemmer>=2.2"]
 hf = ["pyarrow>=15"]
+nli = ["transformers>=4.40", "torch>=2.2", "sentencepiece>=0.2", "protobuf>=4"]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
 
 [project.scripts]

@@ -1,0 +1,5 @@
+{"id": "1", "source_id": "s1", "model": "m-a", "split": "test", "quality": "good", "response": "Within 60 days.", "labels": []}
+{"id": "2", "source_id": "s1", "model": "m-b", "split": "test", "quality": "good", "response": "Within 90 days.", "labels": [{"start": 7, "end": 9, "label_type": "Evident Conflict"}]}
+{"id": "3", "source_id": "s1", "model": "m-c", "split": "test", "quality": "incorrect_refusal", "response": "I cannot answer.", "labels": []}
+{"id": "4", "source_id": "s1", "model": "m-a", "split": "train", "quality": "good", "response": "Within 60 days.", "labels": []}
+{"id": "5", "source_id": "s2", "model": "m-a", "split": "test", "quality": "good", "response": "A summary.", "labels": []}

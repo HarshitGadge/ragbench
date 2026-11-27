@@ -1,0 +1,2 @@
+{"source_id": "s1", "task_type": "QA", "source_info": {"question": "When is the filing due?", "passages": "passage 1:The filing is due within 60 days. passage 2:Late filings pay a fee."}}
+{"source_id": "s2", "task_type": "Summary", "source_info": "A news article."}

@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from ragbench.retriever import _import_target
+from ragbench.runner import environment
 from ragbench.stats import bootstrap_ci
 
 SCHEMA = "ragbench.faithfulness/1"
@@ -280,5 +281,5 @@ def score_answers(
         answers=per_answer,
         summary=summary,
         agreement=agreement,
-        meta=dict(meta or {}),
+        meta=environment() | dict(meta or {}),
     )

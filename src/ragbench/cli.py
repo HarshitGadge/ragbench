@@ -9,7 +9,7 @@ import shlex
 import sys
 from pathlib import Path
 
-from ragbench import __version__
+from ragbench import __version__, ragtruth
 from ragbench.compare import compare_runs
 from ragbench.datasets import load_beir
 from ragbench.download import KNOWN, download
@@ -21,6 +21,10 @@ from ragbench.runner import RunResult, evaluate
 
 
 def _cmd_download(args: argparse.Namespace) -> int:
+    if args.name == ragtruth.NAME:
+        out = ragtruth.build(args.dest)
+        print((out.parent / "about.json").read_text(encoding="utf-8").strip())
+        return 0
     folder = download(args.name, args.dest, url=args.url, source=args.source, split=args.split)
     print(json.dumps(load_beir(folder, args.split).summary()))
     return 0
@@ -30,6 +34,7 @@ def _cmd_info(args: argparse.Namespace) -> int:
     if args.data is None:
         for name, about in KNOWN.items():
             print(f"{name:<12} {about}")
+        print(f"{ragtruth.NAME:<12} {ragtruth.ABOUT}")
         return 0
     print(json.dumps(load_beir(args.data, args.split).summary(), indent=2))
     return 0
@@ -162,8 +167,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"ragbench {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("download", help="download a BEIR dataset")
-    p.add_argument("name", help="BEIR dataset name, e.g. scifact (see `ragbench info`)")
+    p = sub.add_parser("download", help="download a BEIR dataset, or ragtruth-qa")
+    p.add_argument(
+        "name", help="BEIR dataset name, e.g. scifact, or ragtruth-qa (see `ragbench info`)"
+    )
     p.add_argument("--dest", default="data")
     p.add_argument("--split", default="test")
     p.add_argument("--url", default=None, help="override the archive URL")

@@ -1,0 +1,61 @@
+name: Faithfulness
+
+# Checks the faithfulness judges against human labels: builds ragtruth-qa (875
+# RAGTruth answers, each labelled by annotators) and scores it with each judge.
+# The result files committed under results/faithfulness/ are this workflow's
+# artifact, unedited; each records the run's URL and the commit it ran on.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/faithfulness.yml"
+      - "src/ragbench/faithfulness.py"
+      - "src/ragbench/judges.py"
+      - "src/ragbench/ragtruth.py"
+
+permissions:
+  contents: read
+
+jobs:
+  ragtruth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-deberta-v3-base-mnli-fever-anli
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -e '.[nli]'
+      - name: Build ragtruth-qa
+        run: ragbench download ragtruth-qa --dest data
+      - name: Score with each judge
+        run: |
+          out=results/faithfulness/ragtruth-qa
+          rm -rf "$out" && mkdir -p "$out"
+          cp data/ragtruth-qa/about.json "$out/about.json"
+          ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl \
+            --judge ragbench.judges:TokenOverlap --name token-overlap \
+            --out "$out/token-overlap.json" --quiet
+          ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl \
+            --judge ragbench.judges:NLI --name nli-deberta-v3-base \
+            --out "$out/nli-deberta-v3-base.json" --quiet
+      - uses: actions/upload-artifact@v4
+        with:
+          name: faithfulness-results
+          path: results/faithfulness/
+      # The same files as a checksummed archive in the log, for anyone who can read
+      # this run's logs but can't download its artifacts.
+      - name: Print the results archive
+        run: |
+          tar -czf faithfulness.tgz results/faithfulness
+          sha256sum faithfulness.tgz
+          find results/faithfulness -type f | sort | xargs sha256sum
+          echo "BEGIN faithfulness.tgz base64"
+          base64 -w 76 faithfulness.tgz
+          echo "END faithfulness.tgz base64"

@@ -279,6 +279,22 @@ negation, so it is the floor a real judge has to beat. A judge is any object wit
 `--judge module:Name` or `--judge path/to/file.py:Name`, like a retriever; a
 `support_batch(items)` method is used when present.
 
+`ragbench.judges:NLI` is a model judge (`pip install 'ragbench-eval[nli]'`). It runs a
+natural-language-inference model locally, by default DeBERTa-v3-base trained on MNLI,
+FEVER and ANLI, and takes a claim's support as the highest probability that one
+context entails it. Choose another three-way NLI model with `--param model=<hub id>`.
+
+To check a judge against people, `ragbench download ragtruth-qa` builds 875 answers
+from the question-answering test split of [RAGTruth](https://github.com/ParticleMedia/RAGTruth)
+(MIT licence), written by six LLMs and labelled unfaithful wherever annotators marked
+an unsupported span. The files come from a pinned commit and are checked against their
+SHA-256, so every run scores the same answers:
+
+```bash
+ragbench download ragtruth-qa --dest data
+ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl --judge ragbench.judges:NLI
+```
+
 ## Make a results table
 
 ```bash

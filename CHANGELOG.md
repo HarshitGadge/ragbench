@@ -7,6 +7,11 @@
   with a bootstrap 95% interval. With human labels in the answers file it also reports
   the judge's agreement with them (ROC AUC and accuracy).
 - `ragbench.judges:TokenOverlap`: a dependency-free lexical baseline judge.
+- `ragbench.judges:NLI`: a natural-language-inference model judge, with the `nli` extra.
+- `ragbench download ragtruth-qa`: 875 human-labelled RAGTruth answers, pinned and
+  checksummed, for checking a judge. A "Faithfulness" workflow scores them with each judge.
+- Faithfulness results record the ragbench version, the CI run and the commit, like
+  retrieval results.
 - The command line reports a misspelled `module:Name` as an error instead of a traceback.
 - `Hybrid` retriever: reciprocal rank fusion of BM25 and Dense (`rrf_k=60`).
 - `Rerank` retriever: a fastembed cross-encoder over the top hits of a BM25, Dense or
