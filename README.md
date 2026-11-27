@@ -63,12 +63,14 @@ python scripts/update_readme.py
 ## Install
 
 ```bash
-pip install "git+https://github.com/HarshitGadge/ragbench@v1.0.0"
+pip install "git+https://github.com/HarshitGadge/ragbench@v1.1.1"
 
 # with the built-in dense retriever, stemming and the Hugging Face download fallback
-pip install "ragbench[dense,stem,hf] @ git+https://github.com/HarshitGadge/ragbench@v1.0.0"
+pip install "ragbench-eval[dense,stem,hf] @ git+https://github.com/HarshitGadge/ragbench@v1.1.1"
 ```
 
+The distribution is named `ragbench-eval`, because PyPI reserves names too close to the
+existing `rag-bench` package; you still `import ragbench` and run `ragbench`.
 The core package has no runtime dependencies. Extras: `dense` (fastembed, numpy),
 `stem` (snowballstemmer), `hf` (pyarrow).
 
@@ -89,7 +91,7 @@ Two baselines ship with RAGBench, and they double as examples of the interface.
 | retriever | spec | needs |
 |---|---|---|
 | BM25 (Lucene scoring, k1=0.9, b=0.4) | `ragbench.retrievers:BM25` | nothing |
-| Dense, cosine over normalised embeddings | `ragbench.retrievers:Dense` | `pip install 'ragbench[dense]'` |
+| Dense, cosine over normalised embeddings | `ragbench.retrievers:Dense` | `pip install 'ragbench-eval[dense]'` |
 
 ```bash
 ragbench run --data data/scifact --retriever ragbench.retrievers:BM25 --param stem=true
@@ -98,7 +100,7 @@ ragbench run --data data/scifact --retriever ragbench.retrievers:Dense \
 ```
 
 BM25 takes `k1`, `b`, `stopwords` (Lucene's English list, on by default) and `stem`
-(Snowball, `pip install 'ragbench[stem]'`). Its tokeniser is simpler than an
+(Snowball, `pip install 'ragbench-eval[stem]'`). Its tokeniser is simpler than an
 Elasticsearch analyser, so its scores will not match Elasticsearch-based BEIR
 baselines exactly. Dense takes `model` (any [fastembed](https://github.com/qdrant/fastembed)
 text model), `query_prefix` for models that expect one, and `batch_size`; from Python
