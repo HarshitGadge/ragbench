@@ -19,6 +19,19 @@ from ragbench.runner import RunResult
 
 ROOT = Path(__file__).resolve().parent.parent
 START, END = "<!-- results:start -->", "<!-- results:end -->"
+# Optional second block: faithfulness judges checked against human labels.
+F_START, F_END = "<!-- faithfulness:start -->", "<!-- faithfulness:end -->"
+
+
+def _source(metas: list[dict]) -> str:
+    ci_runs = sorted({m.get("ci_run") for m in metas if m.get("ci_run")})
+    shas = sorted({m.get("git_sha")[:7] for m in metas if m.get("git_sha")})
+    source = f"ragbench {', '.join(sorted({m.get('ragbench', '?') for m in metas}))}"
+    if shas:
+        source += f", commit {', '.join(shas)}"
+    if ci_runs:
+        source += ", workflow run " + ", ".join(f"[{u.rsplit('/', 1)[-1]}]({u})" for u in ci_runs)
+    return source
 
 
 def render(results_dir: Path) -> str:
@@ -33,14 +46,7 @@ def render(results_dir: Path) -> str:
     if not runs:
         return "No results yet. Run `bash scripts/benchmark.sh`.\n"
     lines = [markdown_table(runs)]
-    ci_runs = sorted({r.meta.get("ci_run") for r in runs if r.meta.get("ci_run")})
-    shas = sorted({r.meta.get("git_sha")[:7] for r in runs if r.meta.get("git_sha")})
-    versions = sorted({r.meta.get("ragbench") for r in runs})
-    source = f"ragbench {', '.join(versions)}"
-    if shas:
-        source += f", commit {', '.join(shas)}"
-    if ci_runs:
-        source += ", workflow run " + ", ".join(f"[{u.rsplit('/', 1)[-1]}]({u})" for u in ci_runs)
+    source = _source([r.meta for r in runs])
     lines.append(f"\nMeans over test queries with 95% bootstrap intervals; {source}.\n")
 
     # One block per (baseline, candidate) pair, listing every dataset that compared them.
@@ -62,6 +68,42 @@ def render(results_dir: Path) -> str:
     return "\n".join(lines)
 
 
+def render_faithfulness(results_dir: Path) -> str:
+    """Table of faithfulness runs in results_dir/faithfulness/<dataset>/<judge>.json."""
+    runs = []
+    for path in sorted((results_dir / "faithfulness").glob("*/*.json")):
+        if path.name == "about.json":
+            continue
+        runs.append((path.parent.name, json.loads(path.read_text(encoding="utf-8"))))
+    if not runs:
+        return "No faithfulness results yet.\n"
+    lines = [
+        "| Answers | Judge | Faithfulness | AUC vs humans | Accuracy vs humans |",
+        "|---|---|---|---|---|",
+    ]
+    for dataset, r in runs:
+        f, a = r["summary"]["faithfulness"], r.get("agreement") or {}
+        auc = f"{a['auc_faithfulness']:.3f}" if a else "n/a"
+        acc = f"{a['accuracy_all_supported']:.3f}" if a else "n/a"
+        lines.append(
+            f"| {dataset} ({r['summary']['scored']}) | {r['name']} | "
+            f"{f['mean']:.3f} ({f['ci'][0]:.3f} to {f['ci'][1]:.3f}) | {auc} | {acc} |"
+        )
+    lines.append(
+        "\nFaithfulness is the mean share of supported claims per answer, with a 95% "
+        "bootstrap interval. AUC is the chance a faithful answer outscores an unfaithful "
+        "one; accuracy calls an answer faithful when every claim is supported; both against "
+        f"the human labels. {_source([r['meta'] for _, r in runs])}.\n"
+    )
+    return "\n".join(lines)
+
+
+def _replace(text: str, start: str, end: str, body: str) -> str:
+    head, rest = text.split(start, 1)
+    _, tail = rest.split(end, 1)
+    return f"{head}{start}\n{body}{end}{tail}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
@@ -73,9 +115,9 @@ def main(argv: list[str] | None = None) -> int:
     if START not in text or END not in text:
         print(f"{args.readme} has no {START} ... {END} markers", file=sys.stderr)
         return 2
-    head, rest = text.split(START, 1)
-    _, tail = rest.split(END, 1)
-    new = f"{head}{START}\n{render(args.results)}{END}{tail}"
+    new = _replace(text, START, END, render(args.results))
+    if F_START in new and F_END in new:
+        new = _replace(new, F_START, F_END, render_faithfulness(args.results))
     if args.check:
         if new != text:
             print("README results are out of date: run python scripts/update_readme.py")
