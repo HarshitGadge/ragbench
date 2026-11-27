@@ -119,3 +119,59 @@ def test_module_entry_point():
     )
     assert proc.returncode == 0
     assert proc.stdout.startswith("ragbench ")
+
+
+def test_download_falls_back_to_hugging_face(tmp_path, monkeypatch):
+    import io
+
+    import pytest
+
+    pa = pytest.importorskip("pyarrow")
+    import urllib.error
+
+    import pyarrow.parquet as pq
+
+    from ragbench import download as dl
+
+    def parquet(rows):
+        buf = io.BytesIO()
+        pq.write_table(pa.Table.from_pylist(rows), buf)
+        return buf.getvalue()
+
+    files = {
+        "/api/datasets/BeIR/toy/tree/main/corpus": json.dumps(
+            [{"type": "file", "path": "corpus/corpus-00000-of-00001.parquet"}]
+        ).encode(),
+        "/api/datasets/BeIR/toy/tree/main/queries": json.dumps(
+            [{"type": "file", "path": "queries/queries-00000-of-00001.parquet"}]
+        ).encode(),
+        "/datasets/BeIR/toy/resolve/main/corpus/corpus-00000-of-00001.parquet": parquet(
+            [{"_id": "d1", "title": "T", "text": "body"}]
+        ),
+        "/datasets/BeIR/toy/resolve/main/queries/queries-00000-of-00001.parquet": parquet(
+            [{"_id": "q1", "text": "query"}]
+        ),
+        "/datasets/BeIR/toy-qrels/resolve/main/test.tsv": b"query-id\tcorpus-id\tscore\nq1\td1\t1\n",
+    }
+
+    def fake_fetch(url, timeout):
+        return files[url.removeprefix(dl.HF)]
+
+    def no_mirror(*args, **kwargs):
+        raise urllib.error.URLError("timed out")
+
+    monkeypatch.setattr(dl, "_fetch", fake_fetch)
+    monkeypatch.setattr(dl, "_from_zip", no_mirror)
+    folder = dl.download("toy", tmp_path / "data")
+    from ragbench import load_beir
+
+    ds = load_beir(folder)
+    assert ds.qrels == {"q1": {"d1": 1}}
+    assert ds.corpus["d1"].text == "T\n\nbody"
+
+
+def test_download_rejects_unknown_source(tmp_path):
+    import pytest
+
+    with pytest.raises(ValueError):
+        download("x", tmp_path, source="ftp")

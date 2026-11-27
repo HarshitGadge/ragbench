@@ -18,7 +18,7 @@ from ragbench.runner import RunResult, evaluate
 
 
 def _cmd_download(args: argparse.Namespace) -> int:
-    folder = download(args.name, args.dest, url=args.url)
+    folder = download(args.name, args.dest, url=args.url, source=args.source, split=args.split)
     print(json.dumps(load_beir(folder, args.split).summary()))
     return 0
 
@@ -100,6 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dest", default="data")
     p.add_argument("--split", default="test")
     p.add_argument("--url", default=None, help="override the archive URL")
+    p.add_argument("--source", choices=["auto", "ukp", "hf"], default="auto")
     p.set_defaults(func=_cmd_download)
 
     p = sub.add_parser("info", help="list known datasets, or summarise one folder")

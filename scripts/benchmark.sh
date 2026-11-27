@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reproduce every number in the README's Results section.
 #
-#   pip install -e '.[dense,stem]'
+#   pip install -e '.[dense,stem,hf]'
 #   bash scripts/benchmark.sh            # or DATASETS="scifact" bash scripts/benchmark.sh
 #   python scripts/update_readme.py      # regenerate the README table from results/
 #

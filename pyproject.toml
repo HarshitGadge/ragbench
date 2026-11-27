@@ -23,6 +23,7 @@ dependencies = []
 [project.optional-dependencies]
 dense = ["fastembed>=0.4", "numpy>=1.26"]
 stem = ["snowballstemmer>=2.2"]
+hf = ["pyarrow>=15"]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
 
 [project.scripts]

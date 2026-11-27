@@ -33,8 +33,8 @@ jobs:
           path: |
             data
             /tmp/fastembed_cache
-          key: beir-and-models-v1
-      - run: pip install -e '.[dense,stem]'
+          key: beir-and-models-v2
+      - run: pip install -e '.[dense,stem,hf]'
       - name: Run the benchmark
         env:
           DATASETS: ${{ github.event.inputs.datasets || 'scifact nfcorpus arguana' }}

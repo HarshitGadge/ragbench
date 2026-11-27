@@ -30,7 +30,7 @@ No results yet. Run `bash scripts/benchmark.sh`.
 Reproduce:
 
 ```bash
-pip install -e '.[dense,stem]'
+pip install -e '.[dense,stem,hf]'
 bash scripts/benchmark.sh
 python scripts/update_readme.py
 ```

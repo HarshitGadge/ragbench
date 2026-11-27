@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
-        run: pip install -e '.[dev,stem]' numpy pytrec-eval-terrier
+        run: pip install -e '.[dev,stem,hf]' numpy pytrec-eval-terrier
       - name: Test (metrics cross-checked against trec_eval)
         run: pytest --cov=ragbench --cov-report=term-missing
       - name: README results match results/
