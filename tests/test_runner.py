@@ -185,3 +185,12 @@ def test_ci_run_recorded(tiny, monkeypatch):
     result = evaluate(Nothing(), tiny, bootstrap_rounds=20)
     assert result.meta["ci_run"] == "https://github.com/o/r/actions/runs/42"
     assert result.meta["git_sha"] == "abc"
+
+
+def test_evaluate_rejects_bad_recall_ks(tiny):
+    for bad in [(), (0,), (5, 5), (2.5,)]:
+        with pytest.raises(ValueError):
+            evaluate(Oracle(tiny), tiny, recall_ks=bad, bootstrap_rounds=10)
+    result = evaluate(Oracle(tiny), tiny, recall_ks=[5], bootstrap_rounds=10)
+    assert result.settings["recall_ks"] == [5]
+    assert result.mean("recall@5") == 1.0

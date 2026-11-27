@@ -183,3 +183,48 @@ def test_version_matches_package_metadata():
     import ragbench
 
     assert ragbench.__version__ == version("ragbench-eval")
+
+
+def _run(tiny_path, out, *extra):
+    argv = ["run", "--data", str(tiny_path), "--retriever", OVERLAP]
+    return main([*argv, "--out", str(out), "--quiet", "--rounds", "50", *extra])
+
+
+def test_recall_k_default_is_10_and_100(tiny_path, tmp_path):
+    out = tmp_path / "r.json"
+    assert _run(tiny_path, out) == 0
+    data = json.loads(out.read_text())
+    assert data["settings"]["recall_ks"] == [10, 100]
+    assert sorted(data["metrics"]) == ["mrr@10", "ndcg@10", "recall@10", "recall@100"]
+
+
+def test_recall_k_repeated_and_comma_separated(tiny_path, tmp_path):
+    out = tmp_path / "r.json"
+    assert _run(tiny_path, out, "--recall-k", "5,10", "--recall-k", "100", "--recall-k", "5") == 0
+    data = json.loads(out.read_text())
+    assert data["settings"]["recall_ks"] == [5, 10, 100]
+    assert {"recall@5", "recall@10", "recall@100"} <= set(data["metrics"])
+    assert set(data["per_query"]["recall@5"]) == set(data["per_query"]["recall@10"])
+    # Recall can only grow with the cutoff.
+    for q, r5 in data["per_query"]["recall@5"].items():
+        assert r5 <= data["per_query"]["recall@10"][q] <= data["per_query"]["recall@100"][q]
+
+
+def test_recall_k_only_five(tiny_path, tmp_path):
+    out = tmp_path / "r.json"
+    assert _run(tiny_path, out, "--recall-k", "5") == 0
+    metrics = json.loads(out.read_text())["metrics"]
+    assert "recall@5" in metrics and "recall@10" not in metrics
+
+
+def test_recall_k_errors(tiny_path, tmp_path, capsys):
+    out = tmp_path / "r.json"
+    assert _run(tiny_path, out, "--recall-k", "five") == 2
+    assert "whole numbers" in capsys.readouterr().err
+    assert _run(tiny_path, out, "--recall-k", "0") == 2
+    assert "at least 1" in capsys.readouterr().err
+    assert _run(tiny_path, out, "--recall-k", ",") == 2
+    assert "at least one cutoff" in capsys.readouterr().err
+    assert _run(tiny_path, out, "--recall-k", "200") == 2
+    assert "shallower than the deepest cutoff" in capsys.readouterr().err
+    assert not out.exists()
