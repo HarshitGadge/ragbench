@@ -8,7 +8,7 @@ Scoring follows Lucene's BM25 (the one Elasticsearch, Anserini and Pyserini use)
 
 Defaults k1=0.9, b=0.4 are Anserini's. Tokenisation is lowercase word characters,
 with optional English stop-word removal and optional Snowball stemming
-(``pip install 'ragbench[stem]'``). Scores will differ a little from Elasticsearch-based
+(``pip install 'ragbench-eval[stem]'``). Scores will differ a little from Elasticsearch-based
 BEIR baselines because analysers differ.
 """
 
@@ -38,7 +38,7 @@ def make_tokenizer(stopwords: bool = True, stem: bool = False) -> Callable[[str]
         try:
             import snowballstemmer
         except ImportError as exc:  # pragma: no cover - depends on the extra
-            raise ImportError("stem=True needs: pip install 'ragbench[stem]'") from exc
+            raise ImportError("stem=True needs: pip install 'ragbench-eval[stem]'") from exc
         stemmer = snowballstemmer.stemmer("english")
 
     def tokenize(text: str) -> list[str]:

@@ -5,7 +5,7 @@ Two sources, tried in order with ``source="auto"``:
 * ``ukp``: the BEIR project's own zip mirror at TU Darmstadt (standard library only).
 * ``hf``: the BEIR copies on the Hugging Face Hub (``BeIR/<name>`` and
   ``BeIR/<name>-qrels``), converted to the standard layout. Needs ``pyarrow``
-  (``pip install 'ragbench[hf]'``).
+  (``pip install 'ragbench-eval[hf]'``).
 
 Either way the result is ``dest/<name>/{corpus.jsonl, queries.jsonl, qrels/<split>.tsv}``.
 """
@@ -73,7 +73,7 @@ def _from_hf(name: str, target: Path, split: str, timeout: float) -> None:
         import pyarrow.parquet as pq
     except ImportError as exc:
         raise ImportError(
-            "downloading from Hugging Face needs: pip install 'ragbench[hf]'"
+            "downloading from Hugging Face needs: pip install 'ragbench-eval[hf]'"
         ) from exc
 
     with tempfile.TemporaryDirectory(prefix="ragbench-") as tmp:

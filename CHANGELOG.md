@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 (unreleased)
+
+- The distribution is renamed `ragbench-eval`, because PyPI refuses `ragbench` as too
+  close to the existing `rag-bench` project. The import name and the `ragbench` command
+  are unchanged.
+
 ## 1.1.0 (unreleased)
 
 - `ragbench gate`: compares a candidate run with a baseline on the same queries and

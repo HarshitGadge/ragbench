@@ -182,4 +182,4 @@ def test_version_matches_package_metadata():
 
     import ragbench
 
-    assert ragbench.__version__ == version("ragbench")
+    assert ragbench.__version__ == version("ragbench-eval")

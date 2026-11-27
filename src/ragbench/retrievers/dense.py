@@ -1,7 +1,7 @@
 """Dense retrieval: embed the corpus once, rank by cosine similarity.
 
 The default encoder is `fastembed <https://github.com/qdrant/fastembed>`_ (ONNX, CPU),
-installed with ``pip install 'ragbench[dense]'``. Pass ``encoder=`` to use anything else:
+installed with ``pip install 'ragbench-eval[dense]'``. Pass ``encoder=`` to use anything else:
 an object with ``embed_documents(texts)`` and ``embed_query(text)`` returning vectors.
 """
 
@@ -19,7 +19,7 @@ class FastEmbedEncoder:
         try:
             from fastembed import TextEmbedding
         except ImportError as exc:  # pragma: no cover - depends on the extra
-            raise ImportError("Dense needs: pip install 'ragbench[dense]'") from exc
+            raise ImportError("Dense needs: pip install 'ragbench-eval[dense]'") from exc
         self.model = TextEmbedding(model_name=model)
         self.batch_size = batch_size
         self.query_prefix = query_prefix
