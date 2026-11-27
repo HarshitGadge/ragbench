@@ -56,24 +56,25 @@
     }
   },
   "latency_ms": {
-    "p50": 3.207,
-    "p95": 3.207,
-    "mean": 3.207,
+    "p50": 2.54,
+    "p95": 2.54,
+    "mean": 2.54,
     "batched": true
   },
-  "index_seconds": 617.072,
+  "index_seconds": 378.376,
   "meta": {
-    "ragbench": "0.1.0",
+    "ragbench": "1.1.1",
     "python": "3.12.16",
     "platform": "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43",
-    "created": "2026-11-27T03:36:16+00:00",
-    "git_sha": "16ed3d5d2eca638a7ef7d72491499dc84e4147f4",
-    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45932384237",
+    "created": "2026-11-27T06:13:01+00:00",
+    "git_sha": "f4cb14b7128de4a3a4e36336fdd6640aaaa80ff5",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/45949717691",
     "retriever": "ragbench.retrievers:Dense",
     "params": {
-      "model": "BAAI/bge-small-en-v1.5"
+      "model": "BAAI/bge-small-en-v1.5",
+      "cache": "cache/embeddings"
     },
-    "command": "ragbench run --data data/nfcorpus --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --name dense-bge-small --out results/nfcorpus/dense-bge-small.json --quiet"
+    "command": "ragbench run --data data/nfcorpus --retriever ragbench.retrievers:Dense --param model=BAAI/bge-small-en-v1.5 --param cache=cache/embeddings --name dense-bge-small --out results/nfcorpus/dense-bge-small.json --quiet"
   },
   "per_query": {
     "ndcg@10": {

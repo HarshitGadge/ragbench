@@ -24,32 +24,62 @@ Built-in retrievers on three BEIR test sets: SciFact, NFCorpus
 and ArguAna. Dense uses `BAAI/bge-small-en-v1.5` through fastembed with no query
 instruction; BM25 uses k1=0.9, b=0.4. Latency is per query on a GitHub-hosted runner,
 and Dense batches its queries, so its p50 is the batch time divided by the query count.
+Hybrid fuses stemmed BM25 and Dense with reciprocal rank fusion (`rrf_k=60`, top 100 of
+each), and rerank-minilm re-scores Hybrid's top 30 with `Xenova/ms-marco-MiniLM-L-6-v2`;
+their latency includes every stage.
+
+Dense beats stemmed BM25 on nDCG@10 on all three datasets, significantly on SciFact and
+ArguAna. Hybrid helps only on NFCorpus and is worse than Dense on ArguAna, where BM25 is far
+weaker. The cross-encoder lowers nDCG@10 on SciFact and ArguAna and costs 1.4 to 3.3 s per
+query on a CPU runner; ArguAna's queries are whole arguments, unlike the short questions
+the reranker was trained on.
 
 <!-- results:start -->
 | dataset | retriever | ndcg@10 | recall@10 | recall@100 | mrr@10 | queries | p50 ms |
 |---|---|---|---|---|---|---|---|
-| arguana | bm25 | 0.4052 (0.387 to 0.424) | 0.6814 (0.657 to 0.707) | 0.9317 (0.918 to 0.945) | 0.3203 (0.302 to 0.340) | 1406 | 10.10 |
-| arguana | bm25-stem | 0.4012 (0.382 to 0.420) | 0.6643 (0.639 to 0.689) | 0.9324 (0.919 to 0.946) | 0.3198 (0.301 to 0.339) | 1406 | 13.53 |
-| arguana | dense-bge-small | 0.5973 (0.578 to 0.616) | 0.8535 (0.835 to 0.871) | 0.9844 (0.978 to 0.991) | 0.5166 (0.495 to 0.538) | 1406 | 182.74 |
+| arguana | bm25 | 0.4052 (0.387 to 0.424) | 0.6814 (0.657 to 0.707) | 0.9317 (0.918 to 0.945) | 0.3203 (0.302 to 0.340) | 1406 | 21.79 |
+| arguana | bm25-stem | 0.4012 (0.382 to 0.420) | 0.6643 (0.639 to 0.689) | 0.9324 (0.919 to 0.946) | 0.3198 (0.301 to 0.339) | 1406 | 31.07 |
+| arguana | dense-bge-small | 0.5970 (0.578 to 0.616) | 0.8535 (0.835 to 0.871) | 0.9844 (0.978 to 0.991) | 0.5163 (0.495 to 0.537) | 1406 | 208.21 |
+| arguana | hybrid | 0.5506 (0.532 to 0.570) | 0.8329 (0.812 to 0.851) | 0.9851 (0.979 to 0.992) | 0.4627 (0.444 to 0.484) | 1406 | 236.79 |
+| arguana | rerank-minilm | 0.4394 (0.421 to 0.459) | 0.7340 (0.712 to 0.757) | 0.9851 (0.979 to 0.992) | 0.3491 (0.331 to 0.369) | 1406 | 3317.82 |
 | nfcorpus | bm25 | 0.3061 (0.272 to 0.340) | 0.1466 (0.122 to 0.173) | 0.2360 (0.208 to 0.266) | 0.5106 (0.462 to 0.561) | 323 | 0.14 |
 | nfcorpus | bm25-stem | 0.3208 (0.287 to 0.355) | 0.1523 (0.127 to 0.179) | 0.2461 (0.218 to 0.276) | 0.5231 (0.474 to 0.572) | 323 | 0.22 |
-| nfcorpus | dense-bge-small | 0.3385 (0.306 to 0.373) | 0.1609 (0.137 to 0.187) | 0.3057 (0.277 to 0.336) | 0.5305 (0.484 to 0.577) | 323 | 3.21 |
-| scifact | bm25 | 0.6635 (0.620 to 0.710) | 0.7834 (0.737 to 0.829) | 0.8859 (0.851 to 0.922) | 0.6316 (0.585 to 0.681) | 300 | 0.91 |
-| scifact | bm25-stem | 0.6804 (0.635 to 0.724) | 0.8030 (0.758 to 0.846) | 0.9220 (0.891 to 0.951) | 0.6475 (0.600 to 0.694) | 300 | 1.40 |
-| scifact | dense-bge-small | 0.7201 (0.677 to 0.760) | 0.8452 (0.806 to 0.883) | 0.9533 (0.927 to 0.977) | 0.6846 (0.637 to 0.728) | 300 | 9.41 |
+| nfcorpus | dense-bge-small | 0.3385 (0.306 to 0.373) | 0.1609 (0.137 to 0.187) | 0.3057 (0.277 to 0.336) | 0.5305 (0.484 to 0.577) | 323 | 2.54 |
+| nfcorpus | hybrid | 0.3640 (0.329 to 0.400) | 0.1730 (0.148 to 0.201) | 0.3132 (0.285 to 0.343) | 0.5730 (0.523 to 0.621) | 323 | 4.83 |
+| nfcorpus | rerank-minilm | 0.3594 (0.325 to 0.394) | 0.1684 (0.144 to 0.196) | 0.3132 (0.285 to 0.343) | 0.5865 (0.538 to 0.634) | 323 | 1429.31 |
+| scifact | bm25 | 0.6635 (0.620 to 0.710) | 0.7834 (0.737 to 0.829) | 0.8859 (0.851 to 0.922) | 0.6316 (0.585 to 0.681) | 300 | 1.40 |
+| scifact | bm25-stem | 0.6804 (0.635 to 0.724) | 0.8030 (0.758 to 0.846) | 0.9220 (0.891 to 0.951) | 0.6475 (0.600 to 0.694) | 300 | 2.02 |
+| scifact | dense-bge-small | 0.7201 (0.677 to 0.760) | 0.8452 (0.806 to 0.883) | 0.9533 (0.927 to 0.977) | 0.6846 (0.637 to 0.728) | 300 | 12.79 |
+| scifact | hybrid | 0.7362 (0.694 to 0.777) | 0.8562 (0.815 to 0.893) | 0.9650 (0.943 to 0.983) | 0.7047 (0.659 to 0.750) | 300 | 15.21 |
+| scifact | rerank-minilm | 0.6990 (0.656 to 0.741) | 0.8356 (0.793 to 0.876) | 0.9650 (0.943 to 0.983) | 0.6656 (0.619 to 0.712) | 300 | 2451.57 |
 
 
-Means over test queries with 95% bootstrap intervals; ragbench 0.1.0, commit 16ed3d5, workflow run [45932384237](https://github.com/HarshitGadge/ragbench/actions/runs/45932384237).
+Means over test queries with 95% bootstrap intervals; ragbench 1.1.1, commit f4cb14b, workflow run [45949717691](https://github.com/HarshitGadge/ragbench/actions/runs/45949717691).
 
 
 Paired bootstrap, dense-bge-small minus bm25-stem, same queries:
 
-- arguana, ndcg@10: +0.1961 (95% CI +0.1776 to +0.2148, 1406 queries, interval excludes 0)
+- arguana, ndcg@10: +0.1958 (95% CI +0.1774 to +0.2146, 1406 queries, interval excludes 0)
 - arguana, recall@100: +0.0519 (95% CI +0.0391 to +0.0647, 1406 queries, interval excludes 0)
 - nfcorpus, ndcg@10: +0.0177 (95% CI -0.0040 to +0.0390, 323 queries, interval includes 0)
 - nfcorpus, recall@100: +0.0596 (95% CI +0.0405 to +0.0795, 323 queries, interval excludes 0)
 - scifact, ndcg@10: +0.0397 (95% CI +0.0051 to +0.0730, 300 queries, interval excludes 0)
 - scifact, recall@100: +0.0313 (95% CI -0.0013 to +0.0660, 300 queries, interval includes 0)
+
+Paired bootstrap, hybrid minus dense-bge-small, same queries:
+
+- arguana, ndcg@10: -0.0464 (95% CI -0.0601 to -0.0320, 1406 queries, interval excludes 0)
+- arguana, recall@100: +0.0007 (95% CI -0.0043 to +0.0057, 1406 queries, interval includes 0)
+- nfcorpus, ndcg@10: +0.0254 (95% CI +0.0107 to +0.0400, 323 queries, interval excludes 0)
+- nfcorpus, recall@100: +0.0076 (95% CI -0.0039 to +0.0178, 323 queries, interval includes 0)
+- scifact, ndcg@10: +0.0161 (95% CI -0.0079 to +0.0401, 300 queries, interval includes 0)
+- scifact, recall@100: +0.0117 (95% CI -0.0100 to +0.0333, 300 queries, interval includes 0)
+
+Paired bootstrap, rerank-minilm minus hybrid, same queries:
+
+- arguana, ndcg@10: -0.1112 (95% CI -0.1279 to -0.0937, 1406 queries, interval excludes 0)
+- nfcorpus, ndcg@10: -0.0045 (95% CI -0.0183 to +0.0080, 323 queries, interval includes 0)
+- scifact, ndcg@10: -0.0372 (95% CI -0.0652 to -0.0085, 300 queries, interval excludes 0)
 <!-- results:end -->
 
 Reproduce:

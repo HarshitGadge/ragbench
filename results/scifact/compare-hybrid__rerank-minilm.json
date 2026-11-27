@@ -1,0 +1,19 @@
+[
+  {
+    "metric": "ndcg@10",
+    "baseline": "hybrid",
+    "candidate": "rerank-minilm",
+    "baseline_mean": 0.7362,
+    "candidate_mean": 0.699,
+    "diff": {
+      "mean": -0.0372,
+      "ci": [
+        -0.0652,
+        -0.0085
+      ],
+      "level": 0.95
+    },
+    "queries": 300,
+    "significant": true
+  }
+]
