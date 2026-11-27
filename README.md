@@ -63,11 +63,14 @@ python scripts/update_readme.py
 ## Install
 
 ```bash
-pip install "git+https://github.com/HarshitGadge/ragbench@v1.1.1"
+pip install ragbench-eval
 
 # with the built-in dense retriever, stemming and the Hugging Face download fallback
-pip install "ragbench-eval[dense,stem,hf] @ git+https://github.com/HarshitGadge/ragbench@v1.1.1"
+pip install 'ragbench-eval[dense,stem,hf]'
 ```
+
+[ragbench-eval on PyPI](https://pypi.org/project/ragbench-eval/). To install straight from
+a tag instead: `pip install "git+https://github.com/HarshitGadge/ragbench@v1.1.1"`.
 
 The distribution is named `ragbench-eval`, because PyPI reserves names too close to the
 existing `rag-bench` package; you still `import ragbench` and run `ragbench`.
