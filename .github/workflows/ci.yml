@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
-        run: pip install -e '.[dev]' pytrec-eval-terrier
+        run: pip install -e '.[dev,stem]' numpy pytrec-eval-terrier
       - name: Test (metrics cross-checked against trec_eval)
         run: pytest --cov=ragbench --cov-report=term-missing
 
@@ -52,3 +52,24 @@ jobs:
           /tmp/venv/bin/ragbench --version
           /tmp/venv/bin/ragbench run --data tests/fixtures/tiny \
             --retriever examples/overlap.py:WordOverlap --out /tmp/r.json --quiet
+
+  dense-smoke:
+    # Exercises the real fastembed path end to end (downloads a ~67 MB ONNX model).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/fastembed_cache
+          key: fastembed-bge-small-en-v1.5
+      - run: pip install -e '.[dense]'
+      - name: Run Dense on the tiny fixture
+        env:
+          FASTEMBED_CACHE_PATH: /tmp/fastembed_cache
+        run: |
+          ragbench run --data tests/fixtures/tiny --retriever ragbench.retrievers:Dense \
+            --param model=BAAI/bge-small-en-v1.5 --out /tmp/dense.json --quiet
+          python -c "import json; d = json.load(open('/tmp/dense.json')); assert d['metrics']['recall@10']['mean'] > 0, d['metrics']"

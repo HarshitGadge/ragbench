@@ -12,8 +12,7 @@ get numbers you can defend: nDCG@10, Recall@10/100 and MRR@10 per query, a boots
 - **Reproducible results.** Each result file records the exact command, parameters,
   seed, Python and RAGBench versions, and every per-query score.
 
-> Status: early. Built-in BM25 and dense retrievers and published BEIR results come in
-> the next releases. This README will only ever show numbers produced by runs in this
+> Status: early. Published BEIR results come in the next release. This README will only ever show numbers produced by runs in this
 > repository, with the command that produced them.
 
 ## Install
@@ -31,6 +30,28 @@ ragbench run --data data/scifact --retriever examples/overlap.py:WordOverlap
 ```
 
 `run` prints a Markdown table and writes `results/<dataset>__<name>.json`.
+
+## Built-in retrievers
+
+Two baselines ship with RAGBench, and they double as examples of the interface.
+
+| retriever | spec | needs |
+|---|---|---|
+| BM25 (Lucene scoring, k1=0.9, b=0.4) | `ragbench.retrievers:BM25` | nothing |
+| Dense, cosine over normalised embeddings | `ragbench.retrievers:Dense` | `pip install 'ragbench[dense]'` |
+
+```bash
+ragbench run --data data/scifact --retriever ragbench.retrievers:BM25 --param stem=true
+ragbench run --data data/scifact --retriever ragbench.retrievers:Dense \
+  --param model=BAAI/bge-small-en-v1.5
+```
+
+BM25 takes `k1`, `b`, `stopwords` (Lucene's English list, on by default) and `stem`
+(Snowball, `pip install 'ragbench[stem]'`). Its tokeniser is simpler than an
+Elasticsearch analyser, so its scores will not match Elasticsearch-based BEIR
+baselines exactly. Dense takes `model` (any [fastembed](https://github.com/qdrant/fastembed)
+text model), `query_prefix` for models that expect one, and `batch_size`; from Python
+you can pass `encoder=` with any object that has `embed_documents` and `embed_query`.
 
 ## Plug in a retriever
 
@@ -97,7 +118,7 @@ skipped, as in BEIR.
 ## Development
 
 ```bash
-pip install -e '.[dev]' pytrec-eval-terrier
+pip install -e '.[dev,stem]' numpy pytrec-eval-terrier
 ruff check . && ruff format --check . && pytest
 ```
 
