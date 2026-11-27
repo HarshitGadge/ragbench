@@ -24,7 +24,30 @@ instruction; BM25 uses k1=0.9, b=0.4. Latency is per query on a GitHub-hosted ru
 and Dense batches its queries, so its p50 is the batch time divided by the query count.
 
 <!-- results:start -->
-No results yet. Run `bash scripts/benchmark.sh`.
+| dataset | retriever | ndcg@10 | recall@10 | recall@100 | mrr@10 | queries | p50 ms |
+|---|---|---|---|---|---|---|---|
+| arguana | bm25 | 0.4052 (0.387 to 0.424) | 0.6814 (0.657 to 0.707) | 0.9317 (0.918 to 0.945) | 0.3203 (0.302 to 0.340) | 1406 | 10.10 |
+| arguana | bm25-stem | 0.4012 (0.382 to 0.420) | 0.6643 (0.639 to 0.689) | 0.9324 (0.919 to 0.946) | 0.3198 (0.301 to 0.339) | 1406 | 13.53 |
+| arguana | dense-bge-small | 0.5973 (0.578 to 0.616) | 0.8535 (0.835 to 0.871) | 0.9844 (0.978 to 0.991) | 0.5166 (0.495 to 0.538) | 1406 | 182.74 |
+| nfcorpus | bm25 | 0.3061 (0.272 to 0.340) | 0.1466 (0.122 to 0.173) | 0.2360 (0.208 to 0.266) | 0.5106 (0.462 to 0.561) | 323 | 0.14 |
+| nfcorpus | bm25-stem | 0.3208 (0.287 to 0.355) | 0.1523 (0.127 to 0.179) | 0.2461 (0.218 to 0.276) | 0.5231 (0.474 to 0.572) | 323 | 0.22 |
+| nfcorpus | dense-bge-small | 0.3385 (0.306 to 0.373) | 0.1609 (0.137 to 0.187) | 0.3057 (0.277 to 0.336) | 0.5305 (0.484 to 0.577) | 323 | 3.21 |
+| scifact | bm25 | 0.6635 (0.620 to 0.710) | 0.7834 (0.737 to 0.829) | 0.8859 (0.851 to 0.922) | 0.6316 (0.585 to 0.681) | 300 | 0.91 |
+| scifact | bm25-stem | 0.6804 (0.635 to 0.724) | 0.8030 (0.758 to 0.846) | 0.9220 (0.891 to 0.951) | 0.6475 (0.600 to 0.694) | 300 | 1.40 |
+| scifact | dense-bge-small | 0.7201 (0.677 to 0.760) | 0.8452 (0.806 to 0.883) | 0.9533 (0.927 to 0.977) | 0.6846 (0.637 to 0.728) | 300 | 9.41 |
+
+
+Means over test queries with 95% bootstrap intervals; ragbench 0.1.0, commit 16ed3d5, workflow run [45932384237](https://github.com/HarshitGadge/ragbench/actions/runs/45932384237).
+
+
+Paired bootstrap, dense minus BM25 (stemmed), same queries:
+
+- arguana, ndcg@10: +0.1961 (95% CI +0.1776 to +0.2148, 1406 queries, interval excludes 0)
+- arguana, recall@100: +0.0519 (95% CI +0.0391 to +0.0647, 1406 queries, interval excludes 0)
+- nfcorpus, ndcg@10: +0.0177 (95% CI -0.0040 to +0.0390, 323 queries, interval includes 0)
+- nfcorpus, recall@100: +0.0596 (95% CI +0.0405 to +0.0795, 323 queries, interval excludes 0)
+- scifact, ndcg@10: +0.0397 (95% CI +0.0051 to +0.0730, 300 queries, interval excludes 0)
+- scifact, recall@100: +0.0313 (95% CI -0.0013 to +0.0660, 300 queries, interval includes 0)
 <!-- results:end -->
 
 Reproduce:
