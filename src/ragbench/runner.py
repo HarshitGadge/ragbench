@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import platform
 import statistics
 import time
@@ -79,6 +80,13 @@ class RunResult:
         )
 
 
+def _ranking(qid: str, result: Any, depth: int, ignore_identical_ids: bool) -> list[str]:
+    ranking = dedupe(doc_ids(result))
+    if ignore_identical_ids:
+        ranking = [d for d in ranking if d != qid]
+    return ranking[:depth]
+
+
 def evaluate(
     retriever: Any,
     dataset: Dataset,
@@ -92,8 +100,14 @@ def evaluate(
     seed: int = 0,
     progress: Callable[[int, int], None] | None = None,
     meta: dict | None = None,
+    ignore_identical_ids: bool = True,
 ) -> RunResult:
-    """Index the corpus (if the retriever supports it), run every query, score it."""
+    """Index the corpus (if the retriever supports it), run every query, score it.
+
+    ``ignore_identical_ids`` drops a retrieved document whose id equals the query id,
+    as BEIR's own evaluation does by default. It matters for datasets such as ArguAna,
+    where every query is also a corpus document and would otherwise retrieve itself.
+    """
     if depth < max((ndcg_k, *recall_ks)):
         raise ValueError(f"depth {depth} is shallower than the deepest cutoff")
 
@@ -111,14 +125,14 @@ def evaluate(
         results = batch([text for _, text in query_items], depth)
         per_query_ms = (time.perf_counter() - t0) * 1000 / max(1, len(query_items))
         for (qid, _), result in zip(query_items, results, strict=True):
-            rankings[qid] = dedupe(doc_ids(result))[:depth]
+            rankings[qid] = _ranking(qid, result, depth, ignore_identical_ids)
             latencies.append(per_query_ms)
     else:
         for i, (qid, text) in enumerate(query_items, start=1):
             t0 = time.perf_counter()
             result = retriever.search(text, depth)
             latencies.append((time.perf_counter() - t0) * 1000)
-            rankings[qid] = dedupe(doc_ids(result))[:depth]
+            rankings[qid] = _ranking(qid, result, depth, ignore_identical_ids)
             if progress:
                 progress(i, len(query_items))
 
@@ -135,11 +149,18 @@ def evaluate(
     }
     from ragbench import __version__
 
+    ci_run = None
+    if os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("GITHUB_RUN_ID"):
+        server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
+        repo, run_id = os.environ.get("GITHUB_REPOSITORY"), os.environ["GITHUB_RUN_ID"]
+        ci_run = f"{server}/{repo}/actions/runs/{run_id}"
     run_meta = {
         "ragbench": __version__,
         "python": platform.python_version(),
         "platform": platform.platform(terse=True),
         "created": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+        "git_sha": os.environ.get("GITHUB_SHA"),
+        "ci_run": ci_run,
     } | (meta or {})
     return RunResult(
         name=name,
@@ -149,6 +170,7 @@ def evaluate(
             "ndcg_k": ndcg_k,
             "recall_ks": list(recall_ks),
             "limit": limit,
+            "ignore_identical_ids": ignore_identical_ids,
             "bootstrap_rounds": bootstrap_rounds,
             "seed": seed,
         },

@@ -35,6 +35,8 @@ jobs:
         run: pip install -e '.[dev,stem]' numpy pytrec-eval-terrier
       - name: Test (metrics cross-checked against trec_eval)
         run: pytest --cov=ragbench --cov-report=term-missing
+      - name: README results match results/
+        run: python scripts/update_readme.py --check
 
   package:
     runs-on: ubuntu-latest

@@ -156,3 +156,32 @@ def test_load_retriever_from_file(tmp_path):
 def test_load_retriever_from_module():
     r = load_retriever("tests.test_runner:Nothing")
     assert r.search("q", 10) == []
+
+
+class SelfFirst:
+    """Retrieves a document with the query's own id first, as on ArguAna."""
+
+    def __init__(self, dataset):
+        self.by_text = {t: q for q, t in dataset.queries.items()}
+
+    def search(self, query, k):
+        return [self.by_text[query], "d1", "d4", "d5"]
+
+
+def test_identical_ids_are_dropped_by_default(tiny):
+    kept = evaluate(SelfFirst(tiny), tiny, bootstrap_rounds=50, ignore_identical_ids=False)
+    dropped = evaluate(SelfFirst(tiny), tiny, bootstrap_rounds=50)
+    # q1's relevant d1 moves from rank 2 to rank 1 once the self-match is removed
+    assert dropped.per_query["mrr@10"]["q1"] == 1.0
+    assert kept.per_query["mrr@10"]["q1"] == 0.5
+    assert dropped.settings["ignore_identical_ids"] is True
+
+
+def test_ci_run_recorded(tiny, monkeypatch):
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("GITHUB_RUN_ID", "42")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.setenv("GITHUB_SHA", "abc")
+    result = evaluate(Nothing(), tiny, bootstrap_rounds=20)
+    assert result.meta["ci_run"] == "https://github.com/o/r/actions/runs/42"
+    assert result.meta["git_sha"] == "abc"
