@@ -1,0 +1,48 @@
+name: Benchmark
+
+# Runs scripts/benchmark.sh on BEIR datasets and uploads results/ as an artifact.
+# The result files committed to this repository are that artifact, unedited; each
+# one records this workflow's run URL and the commit it ran on.
+
+on:
+  workflow_dispatch:
+    inputs:
+      datasets:
+        description: "Space-separated BEIR datasets"
+        default: "scifact nfcorpus arguana"
+  pull_request:
+    paths:
+      - "scripts/benchmark.sh"
+      - ".github/workflows/benchmark.yml"
+      - "src/ragbench/retrievers/**"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            data
+            /tmp/fastembed_cache
+          key: beir-and-models-v2
+      - run: pip install -e '.[dense,stem,hf]'
+      - name: Run the benchmark
+        env:
+          DATASETS: ${{ github.event.inputs.datasets || 'scifact nfcorpus arguana' }}
+          FASTEMBED_CACHE_PATH: /tmp/fastembed_cache
+        run: bash scripts/benchmark.sh
+      - name: Results table
+        run: ragbench report results/*/bm25.json results/*/bm25-stem.json results/*/dense-bge-small.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: results/

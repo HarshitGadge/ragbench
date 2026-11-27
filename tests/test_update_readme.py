@@ -1,0 +1,48 @@
+import importlib.util
+import json
+
+from ragbench import evaluate
+
+from .conftest import ROOT
+from .test_runner import Nothing, Oracle
+
+spec = importlib.util.spec_from_file_location(
+    "update_readme", ROOT / "scripts" / "update_readme.py"
+)
+update_readme = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(update_readme)
+
+
+def write_results(tiny, folder):
+    good = evaluate(Oracle(tiny), tiny, name="oracle", bootstrap_rounds=100)
+    bad = evaluate(Nothing(), tiny, name="nothing", bootstrap_rounds=100)
+    good.save(folder / "tiny" / "oracle.json")
+    bad.save(folder / "tiny" / "nothing.json")
+    from ragbench.compare import compare_runs
+
+    row = compare_runs(bad, good, "ndcg@10", rounds=100).as_dict()
+    (folder / "tiny" / "compare.json").write_text(json.dumps([row]))
+
+
+def test_render_and_check(tiny, tmp_path):
+    results = tmp_path / "results"
+    write_results(tiny, results)
+    readme = tmp_path / "README.md"
+    readme.write_text("intro\n<!-- results:start -->\nstale\n<!-- results:end -->\noutro\n")
+    args = ["--readme", str(readme), "--results", str(results)]
+    assert update_readme.main([*args, "--check"]) == 1
+    assert update_readme.main(args) == 0
+    text = readme.read_text()
+    assert "| tiny | nothing |" in text and "| tiny | oracle |" in text
+    assert "tiny, ndcg@10: +1.0000" in text
+    assert text.startswith("intro\n") and text.endswith("outro\n")
+    assert update_readme.main([*args, "--check"]) == 0
+
+
+def test_empty_results_and_missing_markers(tmp_path):
+    readme = tmp_path / "README.md"
+    readme.write_text("<!-- results:start --><!-- results:end -->")
+    assert update_readme.main(["--readme", str(readme), "--results", str(tmp_path)]) == 0
+    assert "No results yet" in readme.read_text()
+    readme.write_text("no markers")
+    assert update_readme.main(["--readme", str(readme), "--results", str(tmp_path)]) == 2

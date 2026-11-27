@@ -18,7 +18,7 @@ from ragbench.runner import RunResult, evaluate
 
 
 def _cmd_download(args: argparse.Namespace) -> int:
-    folder = download(args.name, args.dest, url=args.url)
+    folder = download(args.name, args.dest, url=args.url, source=args.source, split=args.split)
     print(json.dumps(load_beir(folder, args.split).summary()))
     return 0
 
@@ -51,6 +51,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         bootstrap_rounds=args.rounds,
         seed=args.seed,
         progress=progress,
+        ignore_identical_ids=not args.keep_identical_ids,
         meta={
             "retriever": args.retriever,
             "params": params,
@@ -99,6 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dest", default="data")
     p.add_argument("--split", default="test")
     p.add_argument("--url", default=None, help="override the archive URL")
+    p.add_argument("--source", choices=["auto", "ukp", "hf"], default="auto")
     p.set_defaults(func=_cmd_download)
 
     p = sub.add_parser("info", help="list known datasets, or summarise one folder")
@@ -117,6 +119,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--rounds", type=int, default=2000, help="bootstrap resamples")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default=None, help="result JSON path")
+    p.add_argument(
+        "--keep-identical-ids",
+        action="store_true",
+        help="score a retrieved document whose id equals the query id (BEIR drops these)",
+    )
     p.add_argument("--quiet", action="store_true")
     p.set_defaults(func=_cmd_run)
 

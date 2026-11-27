@@ -12,8 +12,28 @@ get numbers you can defend: nDCG@10, Recall@10/100 and MRR@10 per query, a boots
 - **Reproducible results.** Each result file records the exact command, parameters,
   seed, Python and RAGBench versions, and every per-query score.
 
-> Status: early. Published BEIR results come in the next release. This README will only ever show numbers produced by runs in this
-> repository, with the command that produced them.
+Every number in this README comes from a result file in [`results/`](results), produced
+by [`scripts/benchmark.sh`](scripts/benchmark.sh) in the Benchmark workflow. The table
+below is generated from those files, and CI fails if it drifts.
+
+## Results
+
+Built-in retrievers on three BEIR test sets: SciFact, NFCorpus
+and ArguAna. Dense uses `BAAI/bge-small-en-v1.5` through fastembed with no query
+instruction; BM25 uses k1=0.9, b=0.4. Latency is per query on a GitHub-hosted runner,
+and Dense batches its queries, so its p50 is the batch time divided by the query count.
+
+<!-- results:start -->
+No results yet. Run `bash scripts/benchmark.sh`.
+<!-- results:end -->
+
+Reproduce:
+
+```bash
+pip install -e '.[dense,stem,hf]'
+bash scripts/benchmark.sh
+python scripts/update_readme.py
+```
 
 ## Install
 
