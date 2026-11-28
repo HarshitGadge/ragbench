@@ -1067,5 +1067,68 @@
    }
   }
  ],
- "faithfulness": []
+ "faithfulness": [
+  {
+   "answers": "ragtruth-qa",
+   "scored": 875,
+   "claims": 5692,
+   "judge": "nli-deberta-v3-base",
+   "judge_spec": "ragbench.judges:NLI",
+   "params": {},
+   "faithfulness": {
+    "mean": 0.7283,
+    "ci": [
+     0.7108,
+     0.7468
+    ],
+    "level": 0.95
+   },
+   "agreement": {
+    "labelled": 875,
+    "faithful": 715,
+    "auc_faithfulness": 0.6948,
+    "auc_mean_support": 0.7009,
+    "accuracy_all_supported": 0.4571
+   },
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "36bd0a2cfeb3ff29eca715d06dea05ab7e0cdfc4",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/46068806383",
+    "created": "2026-11-27T21:56:28+00:00",
+    "command": "ragbench faithfulness-merge shards/nli-0.json shards/nli-1.json shards/nli-10.json shards/nli-11.json shards/nli-12.json shards/nli-13.json shards/nli-14.json shards/nli-15.json shards/nli-2.json shards/nli-3.json shards/nli-4.json shards/nli-5.json shards/nli-6.json shards/nli-7.json shards/nli-8.json shards/nli-9.json --out results/faithfulness/ragtruth-qa/nli-deberta-v3-base.json"
+   },
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/faithfulness/ragtruth-qa/nli-deberta-v3-base.json"
+  },
+  {
+   "answers": "ragtruth-qa",
+   "scored": 875,
+   "claims": 5692,
+   "judge": "token-overlap",
+   "judge_spec": "ragbench.judges:TokenOverlap",
+   "params": {},
+   "faithfulness": {
+    "mean": 0.6913,
+    "ci": [
+     0.6722,
+     0.7119
+    ],
+    "level": 0.95
+   },
+   "agreement": {
+    "labelled": 875,
+    "faithful": 715,
+    "auc_faithfulness": 0.7354,
+    "auc_mean_support": 0.7133,
+    "accuracy_all_supported": 0.4663
+   },
+   "source": {
+    "ragbench": "1.1.1",
+    "git_sha": "36bd0a2cfeb3ff29eca715d06dea05ab7e0cdfc4",
+    "ci_run": "https://github.com/HarshitGadge/ragbench/actions/runs/46068806383",
+    "created": "2026-11-27T21:56:27+00:00",
+    "command": "ragbench faithfulness --answers data/ragtruth-qa/answers.jsonl --judge ragbench.judges:TokenOverlap --name token-overlap --out results/faithfulness/ragtruth-qa/token-overlap.json --quiet"
+   },
+   "file": "https://github.com/HarshitGadge/ragbench/blob/main/results/faithfulness/ragtruth-qa/token-overlap.json"
+  }
+ ]
 }

@@ -1,0 +1,13 @@
+{
+  "source": "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/c103204b9ce28d6bbad859304bf30de72b8ed8fe/dataset",
+  "commit": "c103204b9ce28d6bbad859304bf30de72b8ed8fe",
+  "split": "test",
+  "task": "QA",
+  "answers": 875,
+  "faithful": 715,
+  "unfaithful": 160,
+  "skipped": {
+    "incorrect_refusal": 24,
+    "truncated": 1
+  }
+}
